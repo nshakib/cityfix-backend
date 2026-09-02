@@ -12,23 +12,23 @@ This repository contains the backend implementation of CityFix, including its AP
 
 ## 2. User roles
 
-Four roles exist: **Admin**, **Staff**, **Citizen**.
+Four roles exist: **Super Admin**,**Admin**, **Staff**, **Citizen**.
 
 | Role           | How they join the platform                                                   | How they log in                  |
 | -------------- | ------------------------------------------------------------------------------ | ---------------------------------- |
 | **Citizen**    | Registers directly — email/password or Google                                  | Email/password or Google           |
-| **Staff**     | Applies directly, then waits for an Admin to approve them       | Email/password only                |
+| **Staff**     | Created by Admin/Super Admin; requires email verification and administrator activation.       | Email/password only                |
 | **Admin**      | Created by a Super Admin or an existing Admin — cannot self-register           | Email/password only                |              |
 
-Google login is a **citizen-only** feature. Doctors, Admins, and Super Admins always use email and password.
+Google login is a **citizen-only** feature. Staff, Admins, and Super Admins always use email and password.
 
 ### 2.1 Who can manage whom
 
-Admin and Super Admin have the same day-to-day powers — approving doctors, managing patients, creating new admins — with two exceptions reserved for Super Admin:
+Admin and Super Admin have the same day-to-day powers — approving staff, managing citizen, creating new admins — with two exceptions reserved for Super Admin:
 
 | Action                              | Admin | Super Admin |
 | ------------------------------------ | :---: | :----------:  |
-| Approve or reject a citizen application | ✅    | ✅         |
+| Approve or reject a citizen's submitted complaint. | ✅    | ✅         |
 | Block or unblock a Staff                | ✅    | ✅         |
 | Block or unblock a Citizen              | ✅    | ✅         |
 | Create a new Admin                      | ✅    | ✅         |
@@ -38,7 +38,7 @@ Admin and Super Admin have the same day-to-day powers — approving doctors, man
 
 In short: Admin can act on staff and citizen freely, but only a Super Admin can act on another Admin or Super Admin — including blocking one.
 
-These actions live behind three management screens: **Staff Management** (approve/reject applications, block/unblock Staff), **Citizen Management** (block/unblock Citizen), and **Admin Management** (create and, where allowed, block admins and super admins).
+These actions live behind three management screens: **Staff Management** (manage Staff activation, block/unblock Staff), Complaint Management (review/approve/reject complaints), Citizen Management (block/unblock Citizen), and Admin Management
 
 ## 3. Accounts and authentication
 
@@ -70,17 +70,26 @@ These actions live behind three management screens: **Staff Management** (approv
 
 ### 3.4 Forgot password / reset password
 
-Two-step flow, available to anyone who logs in with a password:
+Four-step flow, available to anyone who logs in with a password:
 
-1. **Forgot password** — citizen submits their registered email address. If the account exists and is eligible for password recovery, the system sends a time-limited OTP to that email address.
-2. **Reset password** — citizen submits the OTP along with a new password. The system verifies the OTP, invalidates the OTP, and securely updates the account password.
+1. **Forgot password** — Available to all password-based accounts: Citizen, Staff, Admin, and Super Admin (except citizen google user). Users can request a password reset using their registered/login email. The system sends an OTP or secure reset link, validates the request, and allows the user to set a new password.
+
+2. **Reset password** — user submits the OTP along with a new password. The system verifies the OTP, invalidates the OTP, and securely updates the account password.
 3. Google-only Citizens who have never set a password cannot use password reset. They should continue to sign in through Google.
+
+4. **Password Policy:** All password-based accounts must use a password of at least 8 characters containing at least one uppercase letter, one lowercase letter, one number, and one special character. The same policy applies during registration, initial password setup, forgot-password reset, and password change.
+
+- New password must not be the same as the previous password.
+- Confirm password must match the new password.
+- Password should never be stored in plain text; store a secure hash.
+- Initial/generated passwords should require a password change on first login.
+- Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character.
 
 ### 3.5 Change password (logged in)
 
 A logged-in user submits their **current password** and a **new password**. This is different from reset: it's for someone who remembers their current password and just wants to change it. Someone who's forgotten their current password uses forgot-password/reset-password instead — change-password is not a substitute for that flow.
 
-### 3.6 Set password (patients only)
+### 3.6 Set password (citizen only)
 
 - A Citizen who initially registered through Google does not have a password because Google authentication does not require one. The Set Password feature allows that Citizen to create a password for their existing account.
 
@@ -109,87 +118,115 @@ Only a Super Admin or an Admin can create a new Admin (a Super Admin can also cr
 
 The system generates a password for the new account and sends it to the **personal** email inside the welcome email, along with the organization email and a prompt to change the password on first login. There is no self-registration and no OTP step for Admin or Super Admin accounts — the invite-and-generated-password flow, plus the forced password change, is what secures them instead.
 
-## 5. Doctor application and approval
+## 5. Staff onboarding and activation
 
-1. A prospective doctor applies through a public "apply to become a doctor" endpoint.
-2. As part of applying, they verify their email with an OTP — the same requirement as patient registration.
-3. Their application then sits pending in **Doctor Management**, reviewed by an Admin or Super Admin, who approves or rejects it.
-4. On approval, the doctor account becomes active, and a welcome email goes out. Only from this point can the doctor log in and use the platform — an unapproved application cannot log in at all.
+1. Admin creates the Staff account → Staff receives an email → Staff verifies their email through the verification link/OTP → Staff sets the initial password → account becomes pending activation → Admin activates the Staff account.
+2. System sends Activation Email with a secure token.
+3. Staff clicks link → Verifies Email (OTP) → Sets Initial Password.
+4. Status updates to PENDING_ACTIVATION.
+5. Admin clicks "Activate" → Status: ACTIVE.
+6. Staff can now log in.
 
-## 6. Doctor schedules
-
-A schedule is what a doctor publishes to say "I'm available on this date, during this time range, book me." Each schedule is for **one calendar date** and belongs to **one doctor**.
-
-### 6.1 Creating a schedule
-
-| Rule                       | Detail                                                                                       |
-| ---------------------------- | ------------------------------------------------------------------------------------------------ |
-| One schedule per day        | A doctor can have at most one schedule per calendar date.                                        |
-| Time range length            | Minimum 3 hours, maximum 8 hours.                                                                 |
-| Must stay within one day     | Start and end time must be on the same calendar date — e.g. `9:00 AM–5:00 PM` or `3:00 PM–11:00 PM` are fine, but a range like `9:00 PM–3:00 AM` (crossing into the next day) is not allowed. |
-| Meet link                    | The doctor provides a video call link — from whichever video call tool they use — as part of creating the schedule. Every appointment booked into that schedule uses this same link. |
-| Status                       | A schedule starts as **draft**. Patients cannot see it at all until the doctor **publishes** it. |
-| Total slots                  | Calculated automatically: the whole time range divided into 20-minute slots. Example: a `3:00 PM–9:00 PM` schedule is 6 hours (360 minutes), giving 18 slots of 20 minutes each. |
-
-### 6.2 Editing a published schedule
-
-Once published, different parts of a schedule lock at different points:
-
-| Field                          | Can it still be changed?                                                    |
-| --------------------------------- | ---------------------------------------------------------------------------- |
-| **Date**                          | No — locked as soon as the schedule is published.                            |
-| **Time range**                    | Yes, but only until the first appointment is booked into it. Once one slot is booked, the time range is locked (since re-slotting would break already-booked serial numbers). |
-| **Status, meet link, and everything else** | Yes, any time — booking a slot doesn't lock these.                   |
-
-## 7. Patient appointment booking
-
-### 7.1 What a patient can see
-
-Patients only ever see **today's** schedules — never a future date, and never a past one. Within today, a schedule is visible (and bookable) only up until its own start time:
-
-> Example: a schedule runs `3:00 PM–9:00 PM`. Before 3:00 PM, patients can see it and book into it. At 3:00 PM the schedule disappears from patient view — no more bookings, even though the consultations are still happening — and it will never reappear (it's not a future schedule anymore, it's today's, and today's window has closed).
-
-A schedule that's fully booked (every slot taken) also stops being shown, for the same reason — there's nothing left to book.
-
-### 7.2 Booking
-
-1. Patient picks an open slot on a visible schedule.
-2. Patient pays for it upfront.
-3. Once payment succeeds, the appointment is created with status **booked**, and it's given a **serial number** — its position among bookings in that schedule (the 1st person to book gets serial 1, the 2nd gets serial 2, and so on).
-4. An invoice PDF — meet link, date, time, and payment details — is emailed to the patient right after payment.
-
-## 8. Appointment lifecycle
-
-An appointment moves through three statuses:
-
+## 6. Complaint categories and departments
+ 
+A category is what a citizen picks when filing a complaint (e.g., Pothole, Streetlight Outage, Garbage Overflow, Water Leakage). Each category maps to exactly one department by default.
+ 
+| Rule | Detail |
+|---|---|
+| Category → Department mapping | Maintained by Admin/Super Admin. Each category has one default department. |
+| Auto-suggestion | When a citizen submits a complaint, the system auto-suggests a department based on the selected category. |
+| Admin override | The assigned Admin/Super Admin can confirm the auto-suggested department or reroute to a different one before assignment proceeds. |
+| Department status | A department can be active or inactive. Inactive departments cannot receive new assignments, but existing complaints already assigned to them are unaffected. |
+ 
+## 7. Complaint submission
+ 
+### 7.1 What a citizen submits
+ 
+| Field | Detail |
+|---|---|
+| Category | Required — selected from the active category list. |
+| Description | Required — free text describing the issue. |
+| Location | Required — address text and/or coordinates. |
+| Photo(s) | Optional — evidence of the issue. |
+| Priority (citizen-suggested) | Optional — Low/Medium/High; final priority can be adjusted by Staff/Admin. |
+ 
+### 7.2 Visibility
+ 
+- A citizen can only view and track their own complaints.
+- Staff can only view complaints assigned to them (individually or to their department, pending individual assignment).
+- Admin/Super Admin can view all complaints across all departments.
+## 8. Complaint lifecycle
+ 
+A complaint moves through the following statuses:
+ 
 ```
-booked  →  ongoing  →  completed
+SUBMITTED → UNDER_REVIEW → ASSIGNED → IN_PROGRESS → RESOLVED → CLOSED
+                                                          ↓
+                                                      DISPUTED → IN_PROGRESS
 ```
+ 
+| Status | Set by | Meaning |
+|---|---|---|
+| **SUBMITTED** | Automatic | Citizen has filed the complaint; category auto-suggests a department. |
+| **UNDER_REVIEW** | Automatic/Admin | Admin/Super Admin confirms or reroutes the department. |
+| **ASSIGNED** | Admin/Super Admin | A specific Staff member is assigned to handle it. |
+| **IN_PROGRESS** | Staff | Staff has started work on the issue. |
+| **RESOLVED** | Staff | Staff marks the issue fixed; must attach resolution proof (photo/note). |
+| **DISPUTED** | Citizen | Citizen rejects the resolution within a review window; reason required. Only reachable from RESOLVED. |
+| **CLOSED** | Citizen or auto-timeout | Citizen confirms resolution, or the complaint auto-closes after a review window passes with no dispute. |
+ 
+**Legal transition rule:** A complaint can never move backward except `RESOLVED → DISPUTED → IN_PROGRESS`. Every other transition is strictly forward. This is enforced in the service layer, not left to the client.
+ 
+ ## Auto-Close Rule: 
+ - If a complaint remains in RESOLVED status for 48 hours without a Dispute, it automatically transitions to CLOSED.
 
-- **Booked** — set automatically once payment succeeds.
-- **Ongoing** — the doctor sets this manually when they start the consultation.
-- **Completed** — the doctor sets this manually when the consultation is finished.
+## 9. Assignment
+ 
+1. Admin/Super Admin reviews a `SUBMITTED` complaint, confirms/reroutes its department (→ `UNDER_REVIEW`).
+2. Admin/Super Admin assigns it to a specific, **active** Staff member within that department (→ `ASSIGNED`). Assignment to a Pending, blocked, or inactive Staff account is not allowed.
+3. A complaint can be reassigned to a different Staff member by Admin/Super Admin at any point before `RESOLVED`, with the reassignment logged.
+## 10. Fines
+ 
+A fine is a monetary penalty issued by Staff for violations.
+Recipient Types:
+Registered Citizen: Linked via userId. Disputes and payments appear in their dashboard.
+Guest Citizen: Identified by name and phone/email. Receives a secure payment link via SMS/Email. Cannot dispute online; must contact Admin support.
+Lifecycle: ISSUED → (PAID | DISPUTED → UPHELD/WAIVED | VOIDED).
+Jurisdiction: Staff can only issue fines related to their assigned Department’s categories.
 
-## 9. Prescriptions
-
-Once an appointment is **completed**, the doctor can write a prescription for it: key findings plus prescribed medicines. As soon as it's submitted, the system generates a PDF and emails it to the patient. A prescription can't be written for an appointment that isn't completed yet.
-
-## 10. Cancellation and refunds
-
-Whether a patient gets their money back depends on how close to the schedule's start time they cancel:
-
-| When the patient cancels                                                          | Refund? |
-| ------------------------------------------------------------------------------------- | :-------: |
-| More than 1 hour before the schedule's start time                                     | Yes — cancel and refund |
-| From 1 hour before the start time, through the running schedule, or after it's over    | Cancellation still allowed — no refund |
-
-> Example: schedule runs `3:00 PM–9:00 PM`. Cancelling any time before 2:00 PM refunds the payment. Cancelling from 2:00 PM onward — including during the 3–9 PM window itself, or even after 9 PM — still cancels the appointment, but without a refund.
-
+**Guest Citizens:** Staff can issue fines to individuals without CityFix accounts by providing their name and contact info. These guests receive a secure payment link via SMS/Email. They cannot dispute online; disputes must be handled by Admin support.
+ 
 ## 11. Data models (conceptual)
+ 
+- **User** — shared identity for every role: email, password (nullable — kept nullable for consistency with the OAuth-linking pattern used by Citizen/Google), linked Google account (Citizen only), role (`SUPER_ADMIN` / `ADMIN` / `STAFF` / `CITIZEN`), account status (Pending/Active/Blocked), email-verified flag, "must change password" flag (for Admin/Super Admin post-creation).
+- **Citizen profile** — personal info (name, phone, address).
+- **Staff profile** — personal info, department, activation status.
+- **Admin profile** — personal info, organization email assigned at creation. Shared shape for Admin and Super Admin; `role` distinguishes them.
+- **Department** — name, status (active/inactive), list of staff.
+- **Category** — name, default department mapping.
+- **Complaint** — citizen, category, department, assigned staff (nullable), description, location, photos, priority, status, timestamps per status, resolution proof.
+- **ComplaintStatusLog** — complaint, from-status, to-status, changed-by, timestamp, note (audit trail).
+- **Fine** — citizen, issuing staff, linked complaint (nullable), reason, amount, evidence, status, payment reference.
+    recipientId (Optional, links to User), guestName (String, Optional), guestContact (String, Optional). If recipientId is - present, it's a registered citizen; if guestName is present, it's a guest.
 
-The database design isn't finalized yet, so this is a description of what each model needs to hold — not a schema.
+- **Payment** — fine, amount, gateway, transaction reference, status, timestamp.
 
-- **User** — the shared identity for every role: email, password (nullable — a Google-only patient has none until they set one), linked Google account, role (`SUPER_ADMIN` / `ADMIN` / `DOCTOR` / `PATIENT`), account status (active/blocked), email-verified flag, and a "must change password" flag (used right after an Admin/Super Admin is created). Every account is exactly one User, linked to exactly one of the profiles below based on its role.
-- **Patient profile** — personal info plus medical info.
-- **Doctor profile** — personal info plus professional/expertise info (e.g. specialization).
-- **Admin profile** — personal info, plus the organization email assigned at creation. Shared shape for both Admin and Super Admin; the User's `role` field is what tells them apart.
+12. ## Notifications
+- The system will send email notifications for critical events:
+- Citizen: Complaint Status Changes (Assigned, Resolved), Fine Issued.
+- Staff: New Complaint Assigned, Fine Dispute Received.
+- Admin: Staff Account Activation Request, High-Priority Complaint Submitted.
+- Technical Note: For the backend demo, these will be logged to the console/database if an SMTP server is not configured, but the architecture will support real email sending via Nodemailer/SendGrid.
+
+13. ## Security & Validation Rules
+Add this to ensure your "Input Validation" and "Security" marks are covered in the requirements:
+13.1 Input Validation (Zod)
+All incoming data must be validated against a schema before reaching the controller.
+Email: Must be a valid format.
+Password: Minimum 8 characters, including at least 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character.
+Phone: Must match local format (e.g., +880...).
+File Uploads: Max 5MB per file, allowed types: jpg, png, pdf.
+13.2 Rate Limiting
+Auth Endpoints: Max 5 requests per minute (to prevent brute-force).
+General API: Max 100 requests per minute per IP.
+
