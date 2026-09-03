@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Welcome to CityFix</title>
+    <style>
+      body { 
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+        background: #f0f2f5; 
+        color: #333; 
+        margin: 0; 
+        padding: 0; 
+      }
+      .container { 
+        max-width: 500px; 
+        margin: 40px auto; 
+        background: #fff; 
+        padding: 30px; 
+        border-radius: 12px; 
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1); 
+        border-top: 5px solid #2563eb; /* CityFix Blue */
+      }
+      h2 { color: #1e293b; margin-top: 0; }
+      p { line-height: 1.6; color: #475569; }
+      .btn {
+        display: inline-block;
+        background: #2563eb;
+        color: #fff !important;
+        text-decoration: none;
+        padding: 12px 24px;
+        border-radius: 6px;
+        font-weight: bold;
+        margin: 20px 0;
+        text-align: center;
+      }
+      .footer { 
+        margin-top: 30px; 
+        font-size: 12px; 
+        color: #94a3b8; 
+        text-align: center; 
+        border-top: 1px solid #e2e8f0;
+        padding-top: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h2>Welcome to CityFix, <%= name %>! 🏙️</h2>
+      
+      <p>Your citizen account has been created successfully. You are now part of a smarter, more responsive city service network.</p>
+      
+      <p>With CityFix, you can:</p>
+      <ul style="color: #475569; line-height: 1.6;">
+        <li>Report issues like potholes, waste management, or water leaks</li>
+        <li>Track real-time status updates on your complaints</li>
+        <li>Receive notifications when your issue is resolved</li>
+      </ul>
+
+      <div style="text-align: center;">
+        <a href="<%= loginLink %>" class="btn">Go to Dashboard</a>
+      </div>
+
+      <p style="font-size: 14px; color: #64748b;">
+        If you didn't create this account, please ignore this email or contact support immediately.
+      </p>
+
+      <div class="footer">
+        &copy; <%= new Date().getFullYear() %> CityFix — Smart City Services.<br>
+        Making our city better, one report at a time.
+      </div>
+    </div>
+  </body>
+</html>

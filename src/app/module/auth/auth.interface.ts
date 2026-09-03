@@ -9,6 +9,14 @@ export interface IRegisterCitizenPayload {
     name: string
     email: string
     password: string
+    citizen: {
+		contactNumber?: string;
+	};
+}
+
+export interface IVerifyEmailPayload {
+	email: string;
+	otp: string;
 }
 
 export interface IRequestUser {
