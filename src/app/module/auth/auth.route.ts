@@ -5,11 +5,11 @@ import { AuthController } from './auth.controller'
 
 const router = Router()
 
-router.post('/register', AuthController.registerPatient)
+router.post('/register', AuthController.registerCitizen)
 router.post('/login', AuthController.loginUser)
 router.get(
     '/me',
-    auth(Role.ADMIN, Role.DOCTOR, Role.PATIENT, Role.SUPER_ADMIN),
+    auth(Role.ADMIN, Role.STAFF, Role.CITIZEN, Role.SUPER_ADMIN),
     AuthController.getMe,
 )
 router.post('/refresh-token', AuthController.refreshToken)
