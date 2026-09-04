@@ -429,21 +429,22 @@ const googleLogin = async (payload: IGoogleLoginPayload) => {
 					},
 				},
 			});
-			const tempatePath = path.join(
+			const templatePath = path.join(
 				process.cwd(),
 				"src/app/templates/citizen-welcome-email.ejs",
 			);
 
 			const templateData = {
 				name: user.name,
+				loginLink: `${config.frontend_url}/login`,
 			};
 
-			const html = await ejs.renderFile(tempatePath, templateData);
+			const html = await ejs.renderFile(templatePath, templateData);
 
 			await transporter.sendMail({
 				from: config.email_sender,
 				to: user.email,
-				subject: "Welcome To PH Healthcare System",
+				subject: "Welcome To CityFix — City Complaint & Service Management Platform",
 				// text : `Your OTP is ${otp}`
 				// html: `<h1>Your OTP is ${otp}</h1>`
 				html,
