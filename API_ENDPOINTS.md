@@ -16,8 +16,7 @@ Handles citizen registration, login, Google authentication, email verification, 
 | POST   | `/auth/verify-email`     | Public        | Verify citizen/staff email           |
 | POST   | `/auth/login`            | Public        | Login with email/password            |
 | POST   | `/auth/google`           | Public        | Citizen Google authentication        |
-| POST   | `/auth/refresh-token`    | Public        | Refresh access token                 |
-| POST   | `/auth/logout`           | Authenticated | Logout                               |
+| POST   | `/auth/refresh-token`    | Public        | Refresh access token                 |                            |
 | POST   | `/auth/forgot-password`  | Public        | Request password reset               |
 | POST   | `/auth/reset-password`   | Public        | Reset password                       |
 | POST   | `/auth/change-password`  | Authenticated | Change current password              |
