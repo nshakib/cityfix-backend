@@ -27,7 +27,8 @@ const registerCitizen = catchAsync(async (req: Request, res: Response) => {
 	sendResponse(res, {
 		statusCode: httpStatus.CREATED,
 		success: true,
-		message: "Verification email sent successfully. Please check your email to verify your account.",
+		message:
+			"Verification email sent successfully. Please check your email to verify your account.",
 		data: null, // You can include user and citizen data here if needed
 	});
 });

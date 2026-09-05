@@ -7,8 +7,11 @@ import { validateRequest } from "../../middleware/validateRequest";
 
 const router = Router();
 
-router.post("/register",validateRequest(UserValidation.CitizenRegistrationZodSchema),
-	AuthController.registerCitizen);
+router.post(
+	"/register",
+	validateRequest(UserValidation.CitizenRegistrationZodSchema),
+	AuthController.registerCitizen,
+);
 
 router.post(
 	"/verify-email",
@@ -16,7 +19,11 @@ router.post(
 	AuthController.verifyCitizenEmail,
 );
 
-router.post("/login", validateRequest(UserValidation.LoginZodSchema), AuthController.loginUser);
+router.post(
+	"/login",
+	validateRequest(UserValidation.LoginZodSchema),
+	AuthController.loginUser,
+);
 router.get(
 	"/me",
 	auth(Role.ADMIN, Role.STAFF, Role.CITIZEN, Role.SUPER_ADMIN),

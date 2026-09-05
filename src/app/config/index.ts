@@ -22,4 +22,7 @@ export default {
 	redis_password: process.env.REDIS_PASSWORD!,
 	redis_host: process.env.REDIS_HOST!,
 	redis_port: process.env.REDIS_PORT!,
+	cloudinary_cloud_name: process.env.CLOUDINARY_CLOUD_NAME!,
+	cloudinary_api_key: process.env.CLOUDINARY_API_KEY!,
+	cloudinary_api_secret: process.env.CLOUDINARY_API_SECRET!,
 };

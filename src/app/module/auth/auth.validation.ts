@@ -16,7 +16,7 @@ const CitizenRegistrationZodSchema = z.object({
 		.regex(/[0-9]/, "Password must contain at least 1 number.")
 		.regex(
 			/[^A-Za-z0-9]/,
-			"Password must contain at least 1 special character."
+			"Password must contain at least 1 special character.",
 		),
 
 	citizen: z
@@ -43,7 +43,7 @@ const LoginZodSchema = z.object({
 		.regex(/[0-9]/, "Password must contain at least 1 number.")
 		.regex(
 			/[^A-Za-z0-9]/,
-			"Password must contain at least 1 special character."
+			"Password must contain at least 1 special character.",
 		),
 });
 
@@ -62,7 +62,7 @@ const ResetPasswordZodSchema = z.object({
 		.regex(/[0-9]/, "Password must contain at least 1 number.")
 		.regex(
 			/[^A-Za-z0-9]/,
-			"Password must contain at least 1 special character."
+			"Password must contain at least 1 special character.",
 		),
 
 	otp: z.string().length(6, "OTP must be exactly 6 characters."),

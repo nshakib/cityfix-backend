@@ -38,7 +38,10 @@ const registerCitizen = async (payload: IRegisterCitizenPayload) => {
 	});
 
 	if (isUserExists) {
-		throw new AppError(httpStatus.CONFLICT, "User with this email already exists");
+		throw new AppError(
+			httpStatus.CONFLICT,
+			"User with this email already exists",
+		);
 	}
 
 	const hashedPassword = await bcrypt.hash(password, 8);
@@ -235,7 +238,10 @@ const loginUser = async (payload: ILoginUserPayload) => {
 		throw new Error("User is deleted");
 	}
 
-	const isPasswordMatched = await bcrypt.compare(password, user.password as string);
+	const isPasswordMatched = await bcrypt.compare(
+		password,
+		user.password as string,
+	);
 
 	if (!isPasswordMatched) {
 		throw new Error("Invalid credentials");
@@ -446,7 +452,8 @@ const googleLogin = async (payload: IGoogleLoginPayload) => {
 			await transporter.sendMail({
 				from: config.email_sender,
 				to: user.email,
-				subject: "Welcome To CityFix — City Complaint & Service Management Platform",
+				subject:
+					"Welcome To CityFix — City Complaint & Service Management Platform",
 				// text : `Your OTP is ${otp}`
 				// html: `<h1>Your OTP is ${otp}</h1>`
 				html,
@@ -633,7 +640,6 @@ const resetPassword = async (payload: IResetPasswordPayload) => {
 		html,
 	});
 };
-
 
 export const AuthService = {
 	registerCitizen,

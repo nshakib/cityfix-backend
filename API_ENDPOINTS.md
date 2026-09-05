@@ -19,8 +19,6 @@ Handles citizen registration, login, Google authentication, email verification, 
 | POST   | `/auth/refresh-token`    | Public        | Refresh access token                 |                            |
 | POST   | `/auth/forgot-password`  | Public        | Request password reset               |
 | POST   | `/auth/reset-password`   | Public        | Reset password                       |
-| POST   | `/auth/change-password`  | Authenticated | Change current password              |
-| POST   | `/auth/set-password`     | Citizen       | Set password for Google-only account |
 | GET    | `/auth/me`               | Authenticated | Get current authenticated user       |
 
 ---
@@ -31,7 +29,6 @@ General authenticated-user management.
 
 | Method | Endpoint             | Access            | Description         |
 | ------ | -------------------- | ----------------- | ------------------- |
-| GET    | `/users/me`          | Authenticated     | Get current user    |
 | PATCH  | `/users/me`          | Authenticated     | Update current user |
 | PATCH  | `/users/me/password` | Authenticated     | Change password     |
 | GET    | `/users/:id`         | Admin/Super Admin | Get user            |
