@@ -93,10 +93,30 @@ const resolveComplaint = catchAsync(async (req: Request, res: Response) => {
     });
 });
 
+const confirmComplaint = catchAsync(async (req: Request, res: Response) => {
+    const complaintId = req.params.id as string;
+    const userId = req.user?.userId;
+
+   
+    if (!userId) {
+        throw new AppError(httpStatus.UNAUTHORIZED, "Authentication required");
+    }
+
+    const result = await ComplaintServices.confirmComplaint(complaintId, userId);
+
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: "Complaint confirmed successfully",
+        data: result,
+    });
+});
+
 export const ComplaintController = {
     createComplaint,
     getMyComplaints,
     getSingleComplaint,
     getAllComplaints,
     resolveComplaint,
+    confirmComplaint
 };

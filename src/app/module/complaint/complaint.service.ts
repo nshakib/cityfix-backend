@@ -169,6 +169,30 @@ const resolveComplaint = async (
   return updatedComplaint;
 };
 
+const confirmComplaint = async (complaintId: string, userId: string) => {
+  const complaint = await prisma.complaint.findUnique({
+    where: { id: complaintId },
+    select: { status: true, citizenId: true },
+  });
+
+  if (!complaint) throw new AppError(404, "Not found");
+  
+  // Security: Only the citizen who filed it can confirm
+  if (complaint.citizenId !== userId) throw new AppError(403, "Unauthorized");
+
+  // Logic: Can only confirm if it's currently RESOLVED
+  if (complaint.status !== ComplaintStatus.RESOLVED) {
+    throw new AppError(400, "Complaint must be in RESOLVED status to confirm");
+  }
+
+  return await prisma.complaint.update({
+    where: { id: complaintId },
+    data: { 
+      status: ComplaintStatus.CONFIRMED,
+      confirmedAt: new Date(),
+    },
+  });
+};
 
 
 export const ComplaintServices = {
@@ -177,4 +201,5 @@ export const ComplaintServices = {
     getSingleComplaintById,
     getAllComplaints,
     resolveComplaint,
+    confirmComplaint
 };

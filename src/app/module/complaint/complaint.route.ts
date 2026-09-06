@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { ComplaintController } from "./complaint.controller";
 import { validateRequest } from "../../middleware/validateRequest";
-import { createComplaintSchema, getMyComplaintsSchema, resolveComplaintSchema } from "./complaint.validation";
+import { confirmComplaintSchema, createComplaintSchema, getMyComplaintsSchema, resolveComplaintSchema } from "./complaint.validation";
 import { auth } from "../../middleware/checkAuth";
 import { Role } from "../../../generated/prisma/enums";
 
@@ -38,6 +38,13 @@ router.patch(
   auth(Role.STAFF, Role.ADMIN),
   validateRequest(resolveComplaintSchema),
   ComplaintController.resolveComplaint
+);
+
+router.patch(
+  '/:id/confirm',
+  auth(Role.CITIZEN), // Only the owner can confirm
+  validateRequest(confirmComplaintSchema),
+  ComplaintController.confirmComplaint
 );
 
 

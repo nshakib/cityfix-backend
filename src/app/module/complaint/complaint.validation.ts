@@ -45,3 +45,7 @@ export const resolveComplaintSchema = z.object({
     .url({ message: 'Resolution proof must be a valid URL' })
     .optional(), 
 });
+
+export const confirmComplaintSchema = z.object({
+  id: z.string().uuid({ message: 'Invalid complaint ID format' }),
+});
