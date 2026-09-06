@@ -1,25 +1,36 @@
 model User {
-  id                 String     @id @default(uuid())
+  id                 String       @id @default(uuid())
   name               String
-  email              String
+  email              String       @unique
   password           String?
   googleId           String?      @unique
   authProvider       AuthProvider @default(CREDENTIAL)
-  emailVerified      Boolean    @default(false)
-  role               Role       @default(CITIZEN)
-  status             UserStatus @default(ACTIVE)
-  needPasswordChange Boolean    @default(false)
-  imageUrl           String       @default("")
-  imagePublicId      String       @default("")
-  isDeleted          Boolean    @default(false)
-  deletedAt          DateTime?
-  createdAt          DateTime   @default(now())
-  updatedAt          DateTime   @updatedAt
-  citizen            Citizen?
-  departmentId       String?
-  department         Department? @relation(fields: [departmentId], references: [id])
-   categoriesCreated Category[] @relation("CategoryCreatedBy")
 
-  @@unique([email])
+  emailVerified      Boolean      @default(false)
+  role               Role         @default(CITIZEN)
+  status             UserStatus   @default(ACTIVE)
+  needPasswordChange Boolean      @default(false)
+
+  imageUrl            String       @default("")
+  imagePublicId       String       @default("")
+
+  isDeleted           Boolean      @default(false)
+  deletedAt           DateTime?
+
+  departmentId       String?
+  department         Department?  @relation(fields: [departmentId], references: [id])
+
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+
+  citizen             Citizen?
+  adminProfile        AdminProfile?
+  staffProfile        StaffProfile?
+
+  categoriesCreated   Category[]   @relation("CategoryCreatedBy")
+
+  @@index([role])
+  @@index([status])
+  @@index([departmentId])
   @@map("users")
 }

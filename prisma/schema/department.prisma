@@ -1,15 +1,17 @@
 model Department {
-  id          String            @id @default(uuid())
-  name        String            @unique
-  description String?           
-  status      DepartmentStatus  @default(ACTIVE)
-  
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
+  id            String           @id @default(uuid())
+  name          String           @unique
+  description   String?
+  status        DepartmentStatus @default(ACTIVE)
 
-  categories  Category[]        
-  users       User[]            
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
 
-  @@index([status])            
+  staffProfiles StaffProfile[]
+  complaints    Complaint[]
+  categories    Category[]
+  users         User[]
+
+  @@index([status])
   @@map("departments")
 }

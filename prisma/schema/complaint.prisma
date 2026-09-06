@@ -1,0 +1,47 @@
+model Complaint {
+  id              String            @id @default(uuid())
+
+  citizenId       String
+  categoryId      String
+  departmentId    String
+  assignedStaffId String?
+
+  description     String
+  location        String
+  photos          String[]
+ 
+
+  priority        ComplaintPriority @default(MEDIUM)
+  status          ComplaintStatus   @default(SUBMITTED)
+
+  submittedAt     DateTime          @default(now())
+  acknowledgedAt  DateTime?
+  assignedAt      DateTime?
+  inProgressAt    DateTime?
+  resolvedAt      DateTime?
+  confirmedAt     DateTime?
+  disputedAt      DateTime?
+
+  resolutionProof String?
+
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  citizen         User              @relation(fields: [citizenId], references: [id])
+  category        Category          @relation(fields: [categoryId], references: [id])
+  department      Department        @relation(fields: [departmentId], references: [id])
+  assignedStaff   User?             @relation(
+    "AssignedComplaints",
+    fields: [assignedStaffId],
+    references: [id]
+  )
+
+  @@index([citizenId])
+  @@index([categoryId])
+  @@index([departmentId])
+  @@index([assignedStaffId])
+  @@index([status])
+  @@index([priority])
+
+  @@map("complaints")
+}

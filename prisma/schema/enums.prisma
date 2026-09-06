@@ -31,3 +31,20 @@ enum CategoryStatus{
   ACTIVE
   INACTIVE
 }
+
+enum ComplaintPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum ComplaintStatus {
+  SUBMITTED
+  ACKNOWLEDGED
+  ASSIGNED
+  IN_PROGRESS
+  RESOLVED
+  CONFIRMED
+  DISPUTED
+}
