@@ -21,3 +21,13 @@ enum AuthProvider {
   GOOGLE
   CREDENTIAL
 }
+
+enum DepartmentStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum CategoryStatus{
+  ACTIVE
+  INACTIVE
+}
