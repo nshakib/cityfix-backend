@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { ComplaintController } from "./complaint.controller";
 import { validateRequest } from "../../middleware/validateRequest";
-import { createComplaintSchema, getMyComplaintsSchema } from "./complaint.validation";
+import { createComplaintSchema, getMyComplaintsSchema, resolveComplaintSchema } from "./complaint.validation";
 import { auth } from "../../middleware/checkAuth";
 import { Role } from "../../../generated/prisma/enums";
 
@@ -29,8 +29,15 @@ router.get(
 router.get(
   '/',
   auth(Role.STAFF, Role.ADMIN, Role.SUPER_ADMIN),
-  validateRequest(getMyComplaintsSchema), // ✅ Reuse filter schema for dashboard
-  ComplaintController.getAllComplaints // ✅ New controller function for admins
+  validateRequest(getMyComplaintsSchema), 
+  ComplaintController.getAllComplaints 
+);
+
+router.patch(
+  '/:id/resolve',
+  auth(Role.STAFF, Role.ADMIN),
+  validateRequest(resolveComplaintSchema),
+  ComplaintController.resolveComplaint
 );
 
 

@@ -8,3 +8,7 @@ export interface ICreateComplaint {
     categoryId: string;
 	userId: string;
 }
+
+export interface IResolveComplaint {
+  resolutionProof?: string
+}

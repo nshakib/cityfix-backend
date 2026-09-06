@@ -47,4 +47,6 @@ enum ComplaintStatus {
   RESOLVED
   CONFIRMED
   DISPUTED
+  CLOSED
 }
+

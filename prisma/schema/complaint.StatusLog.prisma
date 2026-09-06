@@ -1,0 +1,18 @@
+model ComplaintStatusLog {
+  id          String            @id @default(uuid())
+  
+  complaintId String
+  complaint   Complaint         @relation(fields: [complaintId], references: [id], onDelete: Cascade)
+
+  oldStatus   ComplaintStatus?  
+  newStatus   ComplaintStatus
+  
+  performedBy String            
+  note        String?          
+  
+  timestamp   DateTime          @default(now())
+
+  @@index([complaintId])        
+  @@index([performedBy])        
+  @@map("complaint_status_logs")
+}

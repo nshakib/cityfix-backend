@@ -39,3 +39,9 @@ export const getMyComplaintsSchema = z.object({
   limit: z.string().regex(/^\d+$/, { message: 'Limit must be a number' }).optional(),
 });
 
+export const resolveComplaintSchema = z.object({
+  resolutionProof: z
+    .string()
+    .url({ message: 'Resolution proof must be a valid URL' })
+    .optional(), 
+});

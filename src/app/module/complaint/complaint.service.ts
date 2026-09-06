@@ -1,7 +1,7 @@
 import { ComplaintPriority, ComplaintStatus } from "../../../generated/prisma/enums";
 import { prisma } from "../../lib/prisma";
 import { AppError } from "../../utils/AppError";
-import { ICreateComplaint } from "./complaint.interface";
+import { ICreateComplaint, IResolveComplaint } from "./complaint.interface";
 import httpStatus from "http-status";
 
 const createComplaint = async (payload: ICreateComplaint, userId: string) => {
@@ -112,9 +112,69 @@ const getAllComplaints = async (filters: {
     },
   };
 };
+
+const resolveComplaint = async (
+  complaintId: string,
+  staffId: string,
+  payload:IResolveComplaint
+) => {
+    const { resolutionProof } = payload;
+
+    // 1. Check if complaint exists
+    const complaint = await prisma.complaint.findUnique({
+        where: { id: complaintId },
+        select: { status: true }, 
+    });
+
+    if (!complaint) {
+        throw new AppError(httpStatus.NOT_FOUND, "Complaint not found");
+    }
+
+    // 2. Use Enum for safety and include DISPUTED as a blocked state
+    const BLOCKED_STATUSES: ComplaintStatus[] = [
+        ComplaintStatus.RESOLVED,
+        ComplaintStatus.CONFIRMED,
+        ComplaintStatus.CLOSED,
+        ComplaintStatus.DISPUTED,
+    ];
+
+    if (BLOCKED_STATUSES.includes(complaint.status))  {
+        throw new AppError(
+        httpStatus.BAD_REQUEST, 
+        `Cannot resolve: Complaint is currently '${complaint.status}'`
+        );
+    }
+
+  // 3. Transaction: Update Status + Create Audit Log
+  const [updatedComplaint] = await prisma.$transaction([
+    prisma.complaint.update({
+      where: { id: complaintId },
+      data: { 
+        status: ComplaintStatus.RESOLVED,
+        resolutionProof: resolutionProof || null,
+        resolvedAt: new Date(),
+      },
+    }),
+    prisma.complaintStatusLog.create({
+      data: {
+        complaintId,
+        oldStatus: complaint.status,
+        newStatus: ComplaintStatus.RESOLVED,
+        performedBy: staffId,
+        note: resolutionProof ? "Resolution proof uploaded" : "Marked as resolved",
+      },
+    }),
+  ]);
+
+  return updatedComplaint;
+};
+
+
+
 export const ComplaintServices = {
 	createComplaint,
     getMyComplaints,
     getSingleComplaintById,
-    getAllComplaints
+    getAllComplaints,
+    resolveComplaint,
 };
