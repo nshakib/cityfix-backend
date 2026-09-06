@@ -40,7 +40,23 @@ const getMyComplaints = catchAsync(async (req: Request, res: Response) => {
     });
 });
 
+const getSingleComplaint = catchAsync(async (req: Request, res: Response) => {
+        const complaintId = req.params.id as string;
+        
+        const userId = req.user?.userId;
+        if (!userId) throw new AppError(httpStatus.UNAUTHORIZED, "Auth required");
+
+        const result = await ComplaintServices.getSingleComplaintById(complaintId,userId);
+        
+        sendResponse(res, {
+            statusCode: httpStatus.OK,
+            success: true,
+            message: "Complaint retrieved successfully",
+            data: result,
+        });
+});
 export const ComplaintController = {
     createComplaint,
-    getMyComplaints
+    getMyComplaints,
+    getSingleComplaint
 };

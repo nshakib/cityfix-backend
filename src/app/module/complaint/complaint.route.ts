@@ -7,9 +7,11 @@ import { Role } from "../../../generated/prisma/enums";
 
 const router = Router();
 
-router.post("/",auth(Role.CITIZEN),
-    validateRequest(createComplaintSchema),
-    ComplaintController.createComplaint,
+router.get(
+  '/:id',
+  auth(Role.STAFF, Role.ADMIN, Role.SUPER_ADMIN),
+  validateRequest(getMyComplaintsSchema),
+  ComplaintController.getSingleComplaint
 );
 
 router.get(
@@ -18,5 +20,14 @@ router.get(
   validateRequest(getMyComplaintsSchema),
   ComplaintController.getMyComplaints
 );
+
+router.post("/",auth(Role.CITIZEN),
+    validateRequest(createComplaintSchema),
+    ComplaintController.createComplaint,
+);
+
+
+
+
 
 export const ComplaintRoutes = router;

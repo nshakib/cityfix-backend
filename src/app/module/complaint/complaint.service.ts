@@ -49,7 +49,29 @@ const getMyComplaints = async (userId: string) => {
 
   return complaints; 
 };
+
+const getSingleComplaintById = async (complaintId: string, userId: string) => {
+  const complaint = await prisma.complaint.findUnique({
+    where: { id: complaintId },
+    include: {
+      category: true,
+      department: true,
+      assignedStaff: { select: { name: true, phone: true } },
+    },
+  });
+
+  if (!complaint) {
+    throw new AppError(httpStatus.NOT_FOUND, "Complaint not found");
+  }
+
+  if (complaint.citizenId !== userId) {
+    throw new AppError(httpStatus.FORBIDDEN, "You are not authorized to view this complaint");
+  }
+
+  return complaint;
+};
 export const ComplaintServices = {
 	createComplaint,
-    getMyComplaints
+    getMyComplaints,
+    getSingleComplaintById
 };
