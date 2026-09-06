@@ -70,8 +70,51 @@ const getSingleComplaintById = async (complaintId: string, userId: string) => {
 
   return complaint;
 };
+
+const getAllComplaints = async (filters: {
+  status?: string;
+  priority?: string;
+  departmentId?: string;
+  page?: number;
+  limit?: number;
+}) => {
+  const { status, priority, departmentId, page = 1, limit = 10 } = filters;
+  const skip = (page - 1) * limit;
+
+  const where: any = {};
+  if (status) where.status = status;
+  if (priority) where.priority = priority;
+  if (departmentId) where.departmentId = departmentId;
+
+  const [complaints, total] = await prisma.$transaction([
+    prisma.complaint.findMany({
+      where,
+      skip,
+      take: limit,
+      orderBy: { submittedAt: 'desc' },
+      include: {
+        category: { select: { name: true } },
+        department: { select: { name: true } },
+        assignedStaff: { select: { name: true, phone: true } },
+        citizen: { select: { name: true, phone: true } }, // Admins need to contact citizens
+      },
+    }),
+    prisma.complaint.count({ where }),
+  ]);
+
+  return {
+    data: complaints,
+    meta: {
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    },
+  };
+};
 export const ComplaintServices = {
 	createComplaint,
     getMyComplaints,
-    getSingleComplaintById
+    getSingleComplaintById,
+    getAllComplaints
 };

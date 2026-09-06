@@ -7,6 +7,11 @@ import { Role } from "../../../generated/prisma/enums";
 
 const router = Router();
 
+router.post("/",auth(Role.CITIZEN),
+    validateRequest(createComplaintSchema),
+    ComplaintController.createComplaint,
+);
+
 router.get(
   '/:id',
   auth(Role.STAFF, Role.ADMIN, Role.SUPER_ADMIN),
@@ -21,10 +26,14 @@ router.get(
   ComplaintController.getMyComplaints
 );
 
-router.post("/",auth(Role.CITIZEN),
-    validateRequest(createComplaintSchema),
-    ComplaintController.createComplaint,
+router.get(
+  '/',
+  auth(Role.STAFF, Role.ADMIN, Role.SUPER_ADMIN),
+  validateRequest(getMyComplaintsSchema), // ✅ Reuse filter schema for dashboard
+  ComplaintController.getAllComplaints // ✅ New controller function for admins
 );
+
+
 
 
 

@@ -55,8 +55,22 @@ const getSingleComplaint = catchAsync(async (req: Request, res: Response) => {
             data: result,
         });
 });
+
+const getAllComplaints = catchAsync(async (req: Request, res: Response) => {
+    const filters = req.query;
+    const result = await ComplaintServices.getAllComplaints(filters);
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: "Complaints retrieved successfully",
+        data: result.data,
+        meta: result.meta,
+    });
+})
+
 export const ComplaintController = {
     createComplaint,
     getMyComplaints,
-    getSingleComplaint
+    getSingleComplaint,
+    getAllComplaints
 };
