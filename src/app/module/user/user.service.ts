@@ -94,9 +94,9 @@ const uploadProfileImage = async (buffer: Buffer, userId: string) => {
 	return updatedUser;
 };
 
-const updateUserProfile = async (payload:IUpdateUser, userId:string,) => {
-	const {name} = payload;
-	
+const updateUserProfile = async (payload: IUpdateUser, userId: string) => {
+	const { name } = payload;
+
 	const updatedUser = await prisma.user.update({
 		where: {
 			id: userId,
@@ -111,43 +111,48 @@ const updateUserProfile = async (payload:IUpdateUser, userId:string,) => {
 	});
 
 	return updatedUser;
-}
+};
 
 const changePassword = async (userId: string, payload: IChangePassword) => {
-		const { currentPassword, newPassword } = payload;
+	const { currentPassword, newPassword } = payload;
 
-		const user = await prisma.user.findUnique({
-			where: {
-				id: userId,
-			},
-		});
-
-		if (!user || !user.password) {
-			throw new AppError(httpStatus.NOT_FOUND, "User not found");
-		}
-
-		const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
-		if (!isPasswordValid) {
-			throw new AppError(httpStatus.BAD_REQUEST, "Current password is incorrect");
-		}
-
-		const isSameAsCurrent = await bcrypt.compare(newPassword, user.password);
-		if (isSameAsCurrent) {
-			throw new AppError(httpStatus.BAD_REQUEST, "New password must be different from current password");
-		}
-
-		const hashedNewPassword = await bcrypt.hash(newPassword, Number(config.bcrypt_salt_rounds));
-
-		const updatedUser = await prisma.user.update({
-		where: { id: userId },
-		data: { 
-			password: hashedNewPassword, 
-			needPasswordChange: false 
+	const user = await prisma.user.findUnique({
+		where: {
+			id: userId,
 		},
 	});
 
-  		return updatedUser;
+	if (!user || !user.password) {
+		throw new AppError(httpStatus.NOT_FOUND, "User not found");
+	}
 
+	const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
+	if (!isPasswordValid) {
+		throw new AppError(httpStatus.BAD_REQUEST, "Current password is incorrect");
+	}
+
+	const isSameAsCurrent = await bcrypt.compare(newPassword, user.password);
+	if (isSameAsCurrent) {
+		throw new AppError(
+			httpStatus.BAD_REQUEST,
+			"New password must be different from current password",
+		);
+	}
+
+	const hashedNewPassword = await bcrypt.hash(
+		newPassword,
+		Number(config.bcrypt_salt_rounds),
+	);
+
+	const updatedUser = await prisma.user.update({
+		where: { id: userId },
+		data: {
+			password: hashedNewPassword,
+			needPasswordChange: false,
+		},
+	});
+
+	return updatedUser;
 };
 
 export const UserServices = {

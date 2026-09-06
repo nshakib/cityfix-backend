@@ -8,34 +8,28 @@ import { DepartmentValidation } from "./department.validation";
 const router = express.Router();
 
 router.post(
-  "/",
-  auth(Role.SUPER_ADMIN, Role.ADMIN),
-  validateRequest(DepartmentValidation.createDepartmentValidation),
-   departmentController.createDepartment
+	"/",
+	auth(Role.SUPER_ADMIN, Role.ADMIN),
+	validateRequest(DepartmentValidation.createDepartmentValidation),
+	departmentController.createDepartment,
 );
 
-router.get(
-  "/",
-  departmentController.getAllDepartments
-);
+router.get("/", departmentController.getAllDepartments);
 
-router.get(
-  "/:id",
-  departmentController.getSingleDepartment
+router.get("/:id", departmentController.getSingleDepartment);
+
+router.patch(
+	"/:id",
+	auth(Role.SUPER_ADMIN, Role.ADMIN),
+	validateRequest(DepartmentValidation.updateDepartmentValidation),
+	departmentController.updateDepartment,
 );
 
 router.patch(
-  "/:id",
-  auth(Role.SUPER_ADMIN, Role.ADMIN),
-  validateRequest(DepartmentValidation.updateDepartmentValidation),
-  departmentController.updateDepartment
-);
-
-router.patch(
-  "/:id/status",
-  auth(Role.SUPER_ADMIN, Role.ADMIN),
-  validateRequest(DepartmentValidation.updateDepartmentStatusValidation),
-  departmentController.updateDepartmentStatus
+	"/:id/status",
+	auth(Role.SUPER_ADMIN, Role.ADMIN),
+	validateRequest(DepartmentValidation.updateDepartmentStatusValidation),
+	departmentController.updateDepartmentStatus,
 );
 
 export const DepartmentRoutes = router;

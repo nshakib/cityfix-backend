@@ -3,6 +3,6 @@ export interface IUpdateUser {
 }
 
 export interface IChangePassword {
-  currentPassword: string;
-  newPassword: string;
+	currentPassword: string;
+	newPassword: string;
 }

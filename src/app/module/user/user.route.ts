@@ -13,8 +13,16 @@ router.patch(
 	UserController.uploadProfileImage,
 );
 
-router.patch("/profile", auth(Role.SUPER_ADMIN, Role.ADMIN, Role.STAFF, Role.CITIZEN), UserController.updateUserProfile);
+router.patch(
+	"/profile",
+	auth(Role.SUPER_ADMIN, Role.ADMIN, Role.STAFF, Role.CITIZEN),
+	UserController.updateUserProfile,
+);
 
-router.patch("/me/change-password", auth(Role.SUPER_ADMIN, Role.ADMIN, Role.STAFF, Role.CITIZEN), UserController.changePassword);
+router.patch(
+	"/me/change-password",
+	auth(Role.SUPER_ADMIN, Role.ADMIN, Role.STAFF, Role.CITIZEN),
+	UserController.changePassword,
+);
 
 export const UserRoutes = router;

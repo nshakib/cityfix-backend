@@ -13,6 +13,7 @@ import { AuthRoutes } from "./app/module/auth/auth.route";
 import { UserRoutes } from "./app/module/user/user.route";
 import { CategoryRoutes } from "./app/module/category/category.route";
 import { DepartmentRoutes } from "./app/module/department/department.route";
+import { ComplaintRoutes } from "./app/module/complaint/complaint.route";
 
 const app: Application = express();
 
@@ -34,6 +35,7 @@ app.use("/api/v1/auth", AuthRoutes);
 app.use("/api/v1/user", UserRoutes);
 app.use("/api/v1/categories", CategoryRoutes);
 app.use("/api/v1/departments", DepartmentRoutes);
+app.use("/api/v1/complaints", ComplaintRoutes);
 
 // Basic route
 app.get("/", async (req: Request, res: Response) => {

@@ -10,6 +10,7 @@ model Category {
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 
+  complaints Complaint[]
   @@index([departmentId]) // Optimize queries for "categories by department"
    @@index([createdById])
   @@map("categories")
