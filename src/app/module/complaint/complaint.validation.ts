@@ -1,5 +1,6 @@
 
 import { z } from 'zod';
+import { ComplaintPriority, ComplaintStatus } from '../../../generated/prisma/enums';
 
 export const createComplaintSchema = z.object({
   title: z
@@ -27,3 +28,14 @@ export const createComplaintSchema = z.object({
     .optional()
     .default([]), 
 }).strict();
+
+export const getMyComplaintsSchema = z.object({
+
+  status: z.enum(Object.values(ComplaintStatus) as [string, ...string[]]).optional(),
+  
+  priority: z.enum(Object.values(ComplaintPriority) as [string, ...string[]]).optional(),
+  
+  page: z.string().regex(/^\d+$/, { message: 'Page must be a number' }).optional(),
+  limit: z.string().regex(/^\d+$/, { message: 'Limit must be a number' }).optional(),
+});
+

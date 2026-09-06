@@ -32,8 +32,24 @@ const createComplaint = async (payload: ICreateComplaint, userId: string) => {
 	return result;
 };
 
+const getMyComplaints = async (userId: string) => {
+  const complaints = await prisma.complaint.findMany({
+    where: {
+      citizenId: userId,
+    },
+    include: {
+      category: { select: { name: true } }, 
+      department: { select: { name: true } }, 
+      assignedStaff: { select: { name: true, phone: true } },
+    },
+    orderBy: {
+      submittedAt: 'desc',
+    },
+  });
 
-
+  return complaints; 
+};
 export const ComplaintServices = {
 	createComplaint,
+    getMyComplaints
 };
