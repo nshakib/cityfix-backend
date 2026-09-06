@@ -1,0 +1,35 @@
+model Fine {
+  id                String      @id @default(uuid())
+
+  // Recipient
+  recipientId       String?
+  guestName         String?
+  guestContact      String?
+
+  // Fine details
+  categoryId        String
+  complaintId       String?
+  issuedBy          String
+  reason            String
+  amount            Decimal
+  evidence          String?
+  status            FineStatus  @default(ISSUED)
+
+  // Payment
+  paymentReference  String?
+
+  // Timestamps
+  issuedAt          DateTime    @default(now())
+  paidAt            DateTime?
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  // Relations
+  recipient         User?       @relation("FineRecipient", fields: [recipientId], references: [id])
+  issuer            User        @relation("FineIssuer", fields: [issuedBy], references: [id])
+  category          Category    @relation(fields: [categoryId], references: [id])
+  complaint         Complaint?  @relation(fields: [complaintId], references: [id])
+
+  statusLogs        FineStatusLog[]
+  payments          Payment[]
+}

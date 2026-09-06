@@ -1,0 +1,18 @@
+model Payment {
+  id                 String         @id @default(uuid())
+
+  fineId             String
+  amount             Decimal
+
+  gateway            PaymentGateway @default(BKASH)
+  transactionRef     String?
+  status             PaymentStatus  @default(PENDING)
+
+  timestamp          DateTime       @default(now())
+
+  fine               Fine           @relation(fields: [fineId], references: [id])
+
+  @@index([fineId])
+  @@index([transactionRef])
+  @@map("payments")
+}

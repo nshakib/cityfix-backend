@@ -1,0 +1,18 @@
+model FineStatusLog {
+  id          String      @id @default(uuid())
+
+  fineId      String
+  fine        Fine        @relation(fields: [fineId],references: [id],onDelete: Cascade)
+
+  oldStatus   FineStatus?
+  newStatus   FineStatus
+
+  performedBy String
+  note        String?
+
+  timestamp   DateTime    @default(now())
+
+  @@index([fineId])
+  @@index([performedBy])
+  @@map("fine_status_logs")
+}

@@ -50,3 +50,24 @@ enum ComplaintStatus {
   CLOSED
 }
 
+enum FineStatus {
+  ISSUED
+  DISPUTED
+  UPHELD
+  PAID
+  OVERDUE
+  WAIVED
+  VOIDED
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  CANCELLED
+  REFUNDED
+}
+
+enum PaymentGateway {
+  BKASH
+}

@@ -30,6 +30,9 @@ model User {
   complaints         Complaint[]
   assignedComplaints Complaint[]  @relation("AssignedComplaints")
 
+  receivedFines Fine[] @relation("FineRecipient")
+  issuedFines   Fine[] @relation("FineIssuer")
+
   categoriesCreated   Category[]   @relation("CategoryCreatedBy")
 
   @@index([role])

@@ -33,6 +33,7 @@ model Complaint {
   department      Department        @relation(fields: [departmentId], references: [id])
   assignedStaff   User?             @relation( "AssignedComplaints",fields: [assignedStaffId],references: [id])
 
+  fines           Fine[]
   statusLogs      ComplaintStatusLog[]
 
   @@index([citizenId])
