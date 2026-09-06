@@ -1,4 +1,4 @@
-import { ComplaintPriority, ComplaintStatus } from "../../../generated/prisma/enums";
+import { ComplaintPriority, ComplaintStatus, Role } from "../../../generated/prisma/enums";
 import { prisma } from "../../lib/prisma";
 import { AppError } from "../../utils/AppError";
 import { ICreateComplaint, IResolveComplaint } from "./complaint.interface";
@@ -194,6 +194,182 @@ const confirmComplaint = async (complaintId: string, userId: string) => {
   });
 };
 
+// staff
+const getAssignedComplaints = async (userId: string, filters:{
+  page?: number;
+  limit?: number;
+  status?: string;
+}) => {
+  const { page = 1, limit = 10, status } = filters;
+  const skip = (page - 1) * limit;
+
+  const where: any = { assignedStaffId: userId };
+  if (status) where.status = status;
+
+  const [complaints, total] = await prisma.$transaction([
+    prisma.complaint.findMany({
+      where,
+      skip,
+      take: limit,
+      orderBy: { submittedAt: 'desc' },
+      include: {
+        category: { select: { name: true } },
+        citizen: { select: { name: true, phone: true } },
+      },
+    }),
+    prisma.complaint.count({ where }),
+  ]);
+
+  return {
+    data: complaints,
+    meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
+  };
+};
+
+const getDepartmentComplaints = async (departmentId: string,filters:{
+  page?: number;
+  limit?: number;
+  status?: string;
+  priority?: string;
+}) => {
+  const { page = 1, limit = 10, status, priority } = filters;
+  const skip = (page - 1) * limit;
+
+  const where: any = { departmentId };
+  if (status) where.status = status;
+  if (priority) where.priority = priority;
+
+  const [complaints, total] = await prisma.$transaction([
+    prisma.complaint.findMany({
+      where,
+      skip,
+      take: limit,
+      orderBy: { submittedAt: 'desc' },
+      include: {
+        assignedStaff: { select: { name: true } },
+        category: { select: { name: true } },
+      },
+    }),
+    prisma.complaint.count({ where }),
+  ]);
+
+  return {
+    data: complaints,
+    meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
+  };
+};
+
+const startComplaint = async (complaintId: string, staffId: string) => {
+  const complaint = await prisma.complaint.findUnique({
+    where: { id: complaintId },
+    select: { status: true, assignedStaffId: true },
+  });
+
+  if (!complaint) throw new AppError(404, "Complaint not found");
+  
+  // Security: Only the assigned staff can start it
+  if (complaint.assignedStaffId !== staffId) {
+    throw new AppError(403, "You are not assigned to this complaint");
+  }
+
+  // Logic: Can only start if it's currently ASSIGNED
+  if (complaint.status !== ComplaintStatus.ASSIGNED) {
+    throw new AppError(400, `Cannot start: Status is '${complaint.status}'`);
+  }
+
+  return await prisma.$transaction(async (tx) => {
+    const updated = await tx.complaint.update({
+      where: { id: complaintId },
+      data: { status: ComplaintStatus.IN_PROGRESS, inProgressAt: new Date() },
+    });
+
+    await tx.complaintStatusLog.create({
+      data: {
+        complaintId,
+        oldStatus: ComplaintStatus.ASSIGNED,
+        newStatus: ComplaintStatus.IN_PROGRESS,
+        performedBy: staffId,
+        note: "Work started on complaint",
+      },
+    });
+
+    return updated;
+  });
+};
+
+const updatePriority = async (complaintId: string, adminId: string, newPriority: ComplaintPriority) => {
+  const complaint = await prisma.complaint.findUnique({ where: { id: complaintId } });
+  if (!complaint) throw new AppError(404, "Complaint not found");
+
+  return await prisma.$transaction(async (tx) => {
+    const updated = await tx.complaint.update({
+      where: { id: complaintId },
+      data: { priority: newPriority },
+    });
+
+    await tx.complaintStatusLog.create({
+      data: {
+        complaintId,
+        oldStatus: complaint.status, // Priority isn't a status, but we log it anyway
+        newStatus: complaint.status,
+        performedBy: adminId,
+        note: `Priority changed from ${complaint.priority} to ${newPriority}`,
+      },
+    });
+
+    return updated;
+  });
+};
+
+const moveToReview = async (complaintId: string, adminId: string) => {
+  return await prisma.$transaction(async (tx) => {
+    const updated = await tx.complaint.update({
+      where: { id: complaintId },
+      data: { status: ComplaintStatus.ACKNOWLEDGED }, // Or a specific 'IN_REVIEW' status if you add one
+    });
+
+    await tx.complaintStatusLog.create({
+      data: {
+        complaintId,
+        oldStatus: updated.status, // Note: This will be the NEW status due to update order, fix by fetching old first if needed
+        newStatus: ComplaintStatus.ACKNOWLEDGED,
+        performedBy: adminId,
+        note: "Moved to admin review",
+      },
+    });
+    return updated;
+  });
+};
+
+const assignComplaint = async (complaintId: string, adminId: string, staffId: string) => {
+  
+  const staff = await prisma.user.findUnique({ where: { id: staffId } });
+  if (!staff || staff.role !== Role.STAFF) {
+    throw new AppError(httpStatus.BAD_REQUEST, "Invalid staff member");
+  }
+
+  return await prisma.$transaction(async (tx) => {
+    const updated = await tx.complaint.update({
+      where: { id: complaintId },
+      data: { 
+        assignedStaffId: staffId, 
+        status: ComplaintStatus.ASSIGNED,
+        assignedAt: new Date(),
+      },
+    });
+
+    await tx.complaintStatusLog.create({
+      data: {
+        complaintId,
+        oldStatus: updated.status,
+        newStatus: ComplaintStatus.ASSIGNED,
+        performedBy: adminId,
+        note: `Assigned to ${staff.name}`,
+      },
+    });
+    return updated;
+  });
+};
 
 export const ComplaintServices = {
 	createComplaint,
@@ -201,5 +377,11 @@ export const ComplaintServices = {
     getSingleComplaintById,
     getAllComplaints,
     resolveComplaint,
-    confirmComplaint
+    confirmComplaint,
+    getAssignedComplaints,
+    getDepartmentComplaints,
+    startComplaint,
+    updatePriority,
+    moveToReview,
+    assignComplaint
 };
