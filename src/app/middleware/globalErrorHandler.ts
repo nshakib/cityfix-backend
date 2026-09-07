@@ -2,6 +2,8 @@ import type { NextFunction, Request, Response } from "express";
 import httpStatus from "http-status";
 import { Prisma } from "../../generated/prisma/client";
 import config from "../config";
+import { AppError } from "../utils/AppError";
+import { ZodError } from "zod";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const globalErrorHandler = async (
@@ -17,6 +19,10 @@ export const globalErrorHandler = async (
 	let statusCode: number = httpStatus.INTERNAL_SERVER_ERROR;
 	let errorMessage = err.message || "Internal Server Error";
 	const errorName = err.name || "Internal Server Error";
+
+	
+	let message: string = err.message || "Internal Server Error";
+	let errorSources: { path: string | number; message: string }[] = [];
 	// let errorDetails = err.stack
 
 	if (err instanceof Prisma.PrismaClientValidationError) {
@@ -62,4 +68,20 @@ export const globalErrorHandler = async (
 		error: config.node_env === "development" ? err : undefined,
 		stack: config.node_env === "development" ? err.stack : undefined,
 	});
+
+	// 1. Handle Custom AppError
+	if (err instanceof AppError) {
+		statusCode = err.statusCode;
+		message = err.message;
+		errorSources = [{ path: "", message: err.message }];
+	} 
+	// 2. Handle Zod Validation Errors
+	else if (err instanceof ZodError) {
+		statusCode = httpStatus.BAD_REQUEST;
+		message = "Validation Error";
+		errorSources = err.issues.map((issue) => ({
+			path: issue.path.length > 0 ? String(issue.path[issue.path.length - 1]) : "",
+			message: issue.message,
+	}));
+} 
 };
