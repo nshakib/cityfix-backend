@@ -1,39 +1,41 @@
 model User {
-  id                 String       @id @default(uuid())
-  name               String
-  email              String       @unique
-  password           String?
-  googleId           String?      @unique
-  authProvider       AuthProvider @default(CREDENTIAL)
+  id           String       @id @default(uuid())
+  name         String
+  email        String       @unique
+  password     String?
+  googleId     String?      @unique
+  authProvider AuthProvider @default(CREDENTIAL)
 
-  emailVerified      Boolean      @default(false)
-  role               Role         @default(CITIZEN)
-  status             UserStatus   @default(ACTIVE)
-  needPasswordChange Boolean      @default(false)
+  emailVerified      Boolean    @default(false)
+  role               Role       @default(CITIZEN)
+  status             UserStatus @default(ACTIVE)
+  needPasswordChange Boolean    @default(false)
 
-  imageUrl            String       @default("")
-  imagePublicId       String       @default("")
+  imageUrl      String @default("")
+  imagePublicId String @default("")
 
-  isDeleted           Boolean      @default(false)
-  deletedAt           DateTime?
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
 
-  departmentId       String?
-  department         Department?  @relation(fields: [departmentId], references: [id])
+  departmentId String?
+  department   Department? @relation(fields: [departmentId], references: [id])
 
-  createdAt           DateTime     @default(now())
-  updatedAt           DateTime     @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  citizen             Citizen?
-  adminProfile        AdminProfile?
-  staffProfile        StaffProfile?
+  citizen      Citizen?
+  adminProfile AdminProfile?
+  staffProfile StaffProfile?
 
   complaints         Complaint[]
-  assignedComplaints Complaint[]  @relation("AssignedComplaints")
+  assignedComplaints Complaint[] @relation("AssignedComplaints")
 
   receivedFines Fine[] @relation("FineRecipient")
   issuedFines   Fine[] @relation("FineIssuer")
 
-  categoriesCreated   Category[]   @relation("CategoryCreatedBy")
+  categoriesCreated Category[] @relation("CategoryCreatedBy")
+
+  notifications Notification[] @relation(name: "UserNotifications")
 
   @@index([role])
   @@index([status])

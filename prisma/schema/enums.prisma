@@ -27,7 +27,7 @@ enum DepartmentStatus {
   INACTIVE
 }
 
-enum CategoryStatus{
+enum CategoryStatus {
   ACTIVE
   INACTIVE
 }
@@ -70,4 +70,11 @@ enum PaymentStatus {
 
 enum PaymentGateway {
   BKASH
+}
+
+enum NotificationType {
+  COMPLAINT_UPDATE
+  FINE_ISSUED
+  FINE_STATUS_CHANGE
+  SYSTEM_ALERT
 }

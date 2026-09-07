@@ -1,40 +1,39 @@
 model Complaint {
-  id              String            @id @default(uuid())
+  id String @id @default(uuid())
 
   citizenId       String
   categoryId      String
   departmentId    String
   assignedStaffId String?
 
-  title           String
-  description     String
-  location        String
-  photos          String[]          @default([])
- 
+  title       String
+  description String
+  location    String
+  photos      String[] @default([])
 
-  priority        ComplaintPriority @default(MEDIUM)
-  status          ComplaintStatus   @default(SUBMITTED)
+  priority ComplaintPriority @default(MEDIUM)
+  status   ComplaintStatus   @default(SUBMITTED)
 
-  submittedAt     DateTime          @default(now())
-  acknowledgedAt  DateTime?
-  assignedAt      DateTime?
-  inProgressAt    DateTime?
-  resolvedAt      DateTime?
-  confirmedAt     DateTime?
-  disputedAt      DateTime?
+  submittedAt    DateTime  @default(now())
+  acknowledgedAt DateTime?
+  assignedAt     DateTime?
+  inProgressAt   DateTime?
+  resolvedAt     DateTime?
+  confirmedAt    DateTime?
+  disputedAt     DateTime?
 
   resolutionProof String?
 
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  citizen         User              @relation(fields: [citizenId], references: [id])
-  category        Category          @relation(fields: [categoryId], references: [id])
-  department      Department        @relation(fields: [departmentId], references: [id])
-  assignedStaff   User?             @relation( "AssignedComplaints",fields: [assignedStaffId],references: [id])
+  citizen       User       @relation(fields: [citizenId], references: [id])
+  category      Category   @relation(fields: [categoryId], references: [id])
+  department    Department @relation(fields: [departmentId], references: [id])
+  assignedStaff User?      @relation("AssignedComplaints", fields: [assignedStaffId], references: [id])
 
-  fines           Fine[]
-  statusLogs      ComplaintStatusLog[]
+  fines      Fine[]
+  statusLogs ComplaintStatusLog[]
 
   @@index([citizenId])
   @@index([categoryId])
@@ -42,6 +41,5 @@ model Complaint {
   @@index([assignedStaffId])
   @@index([status])
   @@index([priority])
-
   @@map("complaints")
 }

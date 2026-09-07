@@ -1,16 +1,16 @@
 model Payment {
-  id                 String         @id @default(uuid())
+  id String @id @default(uuid())
 
-  fineId             String
-  amount             Decimal
+  fineId String
+  amount Decimal
 
-  gateway            PaymentGateway @default(BKASH)
-  transactionRef     String?
-  status             PaymentStatus  @default(PENDING)
+  gateway        PaymentGateway @default(BKASH)
+  transactionRef String?
+  status         PaymentStatus  @default(PENDING)
 
-  timestamp          DateTime       @default(now())
+  timestamp DateTime @default(now())
 
-  fine               Fine           @relation(fields: [fineId], references: [id])
+  fine Fine @relation(fields: [fineId], references: [id])
 
   @@index([fineId])
   @@index([transactionRef])

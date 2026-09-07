@@ -1,20 +1,19 @@
 model Category {
-  id           String     @id @default(uuid())
-  name         String     @unique // e.g., "Pothole", "Water Leakage"
-  departmentId String     // FK to Department (the "default mapping")
+  id           String @id @default(uuid())
+  name         String @unique // e.g., "Pothole", "Water Leakage"
+  departmentId String // FK to Department (the "default mapping")
   createdById  String
-  
-  department   Department @relation(fields: [departmentId], references: [id])
-  createdBy    User       @relation("CategoryCreatedBy", fields: [createdById], references: [id])
 
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  department Department @relation(fields: [departmentId], references: [id])
+  createdBy  User       @relation("CategoryCreatedBy", fields: [createdById], references: [id])
 
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  complaints  Complaint[]
-  fines       Fine[]
+  complaints Complaint[]
+  fines      Fine[]
 
   @@index([departmentId]) // Optimize queries for "categories by department"
-   @@index([createdById])
+  @@index([createdById])
   @@map("categories")
 }
