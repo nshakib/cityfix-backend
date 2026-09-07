@@ -59,7 +59,7 @@ const getAllFines = async (filters: IGetFinesFilters) => {
 	if (search) {
 		where.OR = [
 			{ reason: { contains: search, mode: "insensitive" } },
-			{ citizen: { name: { contains: search, mode: "insensitive" } } },
+			{ recipient: { name: { contains: search, mode: "insensitive" } } },
 		];
 	}
 
@@ -70,7 +70,7 @@ const getAllFines = async (filters: IGetFinesFilters) => {
 			take: Number(limit),
 			orderBy: { createdAt: "desc" },
 			include: {
-				citizen: { select: { name: true, phone: true } },
+				recipient: { select: { name: true, phone: true } },
 				issuedByStaff: { select: { name: true } },
 			},
 		}),
@@ -93,7 +93,7 @@ const getMyFines = async (userId: string, filters: IGetFinesFilters) => {
 	const { page = 1, limit = 10, status } = filters;
 	const skip = (Number(page) - 1) * Number(limit);
 
-	const where: any = { citizenId: userId };
+	const where: any = { recipientId: userId };
 	if (status) where.status = status;
 
 	const [fines, total] = await prisma.$transaction([
@@ -131,7 +131,7 @@ const getSingleFineById = async (
 	if (!fine) throw new AppError(httpStatus.NOT_FOUND, "Fine not found");
 
 	// Security: Citizens can only see their own fines
-	if (userRole === "CITIZEN" && fine.citizenId !== userId) {
+	if (userRole === Role.CITIZEN && fine.recipientId !== userId) {
 		throw new AppError(httpStatus.FORBIDDEN, "Unauthorized access");
 	}
 
