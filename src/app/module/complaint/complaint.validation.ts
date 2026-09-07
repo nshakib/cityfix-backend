@@ -23,6 +23,7 @@ export const createComplaintSchema = z
 			.max(255),
 
 		categoryId: z.string().uuid({ message: "Invalid category ID format" }),
+		
 
 		photos: z
 			.array(z.string().url({ message: "Each photo must be a valid URL" }))
@@ -30,7 +31,6 @@ export const createComplaintSchema = z
 			.default([]),
 	})
 	.strict();
-
 export const getMyComplaintsSchema = z.object({
 	status: z
 		.enum(Object.values(ComplaintStatus) as [string, ...string[]])

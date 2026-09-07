@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { ComplaintController } from "./complaint.controller";
 import { validateRequest } from "../../middleware/validateRequest";
-import { confirmComplaintSchema, createComplaintSchema, getDepartmentComplaintsSchema, getMyComplaintsSchema, getSingleComplaintSchema, getSingleComplaintSchema, resolveComplaintSchema, updatePrioritySchema, updateStatusSchema } from "./complaint.validation";
+import { confirmComplaintSchema, createComplaintSchema, getDepartmentComplaintsSchema, getMyComplaintsSchema, getSingleComplaintSchema, resolveComplaintSchema, updatePrioritySchema, updateStatusSchema } from "./complaint.validation";
 import { auth } from "../../middleware/checkAuth";
 import { Role } from "../../../generated/prisma/enums";
 

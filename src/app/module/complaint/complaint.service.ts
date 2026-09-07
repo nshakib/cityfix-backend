@@ -16,6 +16,7 @@ const createComplaint = async (payload: ICreateComplaint, userId: string) => {
 		select: { departmentId: true, name: true },
 	});
 
+	
 	if (!category) {
 		throw new AppError(httpStatus.NOT_FOUND, "Invalid category selected");
 	}
@@ -32,6 +33,7 @@ const createComplaint = async (payload: ICreateComplaint, userId: string) => {
 			priority: ComplaintPriority.MEDIUM,
 		},
 	});
+	
 
 	return result;
 };

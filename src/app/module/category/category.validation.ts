@@ -8,6 +8,7 @@ export const createCategorySchema = z
 			.max(50, { message: "Name cannot exceed 50 characters" })
 			.trim(),
 		departmentId: z.string().uuid({ message: "Invalid department ID format" }),
+		description: z.string().max(500).optional(),
 	})
 	.strict();
 
