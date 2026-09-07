@@ -3,7 +3,6 @@ import type { Role } from "../../../generated/prisma/browser";
 export interface ILoginUserPayload {
 	email: string;
 	password: string;
-	
 }
 
 export interface IRegisterCitizenPayload {

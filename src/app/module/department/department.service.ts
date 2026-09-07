@@ -2,7 +2,10 @@ import type { DepartmentStatus } from "../../../generated/prisma/enums";
 import { prisma } from "../../lib/prisma";
 import { AppError } from "../../utils/AppError";
 import httpStatus from "http-status";
-import type { ICreateDepartment, IUpdateDepartment } from "./department.interface";
+import type {
+	ICreateDepartment,
+	IUpdateDepartment,
+} from "./department.interface";
 
 const createDepartment = async (payload: ICreateDepartment) => {
 	const { name, description, status } = payload;

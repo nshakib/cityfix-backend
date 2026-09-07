@@ -3,10 +3,18 @@ import {
 	ComplaintStatus,
 	Role,
 } from "../../../generated/prisma/enums";
+import { ComplaintWhereInput } from "../../../generated/prisma/models";
+import { IQuery } from "../../interfaces";
 import { prisma } from "../../lib/prisma";
 import { AppError } from "../../utils/AppError";
-import { STATUS_TIMESTAMP_FIELD, STATUS_TRANSITIONS } from "./complaint.constants";
-import type { ICreateComplaint, IResolveComplaint } from "./complaint.interface";
+import {
+	STATUS_TIMESTAMP_FIELD,
+	STATUS_TRANSITIONS,
+} from "./complaint.constants";
+import type {
+	ICreateComplaint,
+	IResolveComplaint,
+} from "./complaint.interface";
 import httpStatus from "http-status";
 
 const createComplaint = async (payload: ICreateComplaint, userId: string) => {
@@ -17,7 +25,6 @@ const createComplaint = async (payload: ICreateComplaint, userId: string) => {
 		select: { departmentId: true, name: true },
 	});
 
-	
 	if (!category) {
 		throw new AppError(httpStatus.NOT_FOUND, "Invalid category selected");
 	}
@@ -34,10 +41,75 @@ const createComplaint = async (payload: ICreateComplaint, userId: string) => {
 			priority: ComplaintPriority.MEDIUM,
 		},
 	});
-	
 
 	return result;
 };
+
+// const acknowledgeComplaint = async (complaintId: string, user:Role, note?: string, userId?: string) => {
+//   // 1. Permission Check
+//   if (user !== Role.ADMIN && user !== Role.SUPER_ADMIN) {
+//     throw new AppError(httpStatus.FORBIDDEN, "Only Admins can acknowledge complaints");
+//   }
+
+//   // 2. Find Complaint
+//   const complaint = await prisma.complaint.findUnique({
+//     where: { id: complaintId },
+//   });
+
+//   if (!complaint) {
+//     throw new AppError(httpStatus.NOT_FOUND, "Complaint not found");
+//   }
+
+//   // 3. State Transition Check (§8)
+//   if (complaint.status !== ComplaintStatus.SUBMITTED) {
+//     throw new AppError(httpStatus.BAD_REQUEST, "Complaint can only be acknowledged from SUBMITTED status");
+//   }
+
+//   // 4. Update Status & Timestamp
+//   const updatedComplaint = await prisma.$transaction(async (tx) => {
+//     // Update Complaint
+//     const updated = await tx.complaint.update({
+//       where: { id: complaintId },
+//       data: {
+//         status: ComplaintStatus.ACKNOWLEDGED,
+//         acknowledgedAt: new Date(),
+//       },
+//     });
+
+//     // Create Audit Log
+//     await tx.complaintStatusLog.create({
+//       data: {
+//         complaintId: complaintId,
+//         fromStatus: ComplaintStatus.SUBMITTED,
+//         toStatus: ComplaintStatus.ACKNOWLEDGED,
+//         changedBy:userId,
+//         note: note || "Complaint acknowledged by Admin",
+//       },
+//     });
+
+//     return updated;
+//   });
+
+//   return updatedComplaint;
+// };
+
+const acknowledgeComplaint = async (complaintId: string, user: Role, note?: string, userId?: string) => {
+  // 1. Permission Check (§2.1 & §6 API Endpoints)
+  if (user !== Role.ADMIN && user !== Role.SUPER_ADMIN) {
+    throw new AppError(httpStatus.FORBIDDEN, "Only Admins can acknowledge complaints");
+  }
+
+  // 2. Use the centralized transition handler
+  // This handles: Finding the complaint, checking allowed transitions, 
+  // updating timestamps, and creating the audit log.
+  return transitionStatus(
+    complaintId,
+    ComplaintStatus.ACKNOWLEDGED,
+    userId as string, // Pass the userId for the audit log
+    note || "Complaint acknowledged by Admin"
+  );
+};
+
 
 const getMyComplaints = async (userId: string) => {
 	const complaints = await prisma.complaint.findMany({
@@ -81,27 +153,49 @@ const getSingleComplaintById = async (complaintId: string, userId: string) => {
 	return complaint;
 };
 
-const getAllComplaints = async (filters: {
-	status?: string;
-	priority?: string;
-	departmentId?: string;
-	page?: number;
-	limit?: number;
-}) => {
-	const { status, priority, departmentId, page = 1, limit = 10 } = filters;
-	const skip = (page - 1) * limit;
+const getAllComplaints = async (query: IQuery, departmentId: string) => {
+	const { 
+		status, 
+		priority, 
+		searchTerm, 
+		page = 1, 
+		limit = 10, 
+		sortBy = "submittedAt", 
+		sortOrder = "desc" 
+	} = query;
+	const pageNum = Number(page);
+	const limitNum = Number(limit);
+	const skip = (pageNum - 1) * limitNum;
 
-	const where: any = {};
-	if (status) where.status = status;
-	if (priority) where.priority = priority;
-	if (departmentId) where.departmentId = departmentId;
+	const andConditions: ComplaintWhereInput[] = [];
+
+	const whereCondition = andConditions.length > 0 ? { AND: andConditions } : {};
+
+	if (status) andConditions.push({ status });
+	if (priority) andConditions.push({ priority });
+	
+	if (query.departmentId) {
+		andConditions.push({ departmentId: query.departmentId });
+	}
+	if (searchTerm) {
+		andConditions.push({
+			OR: [
+				{ description: { contains: searchTerm, mode: "insensitive" } },
+				{ location: { contains: searchTerm, mode: "insensitive" } }, // If location is stored as text
+				{ category: { name: { contains: searchTerm, mode: "insensitive" } } },
+			],
+		});
+	}
 
 	const [complaints, total] = await prisma.$transaction([
 		prisma.complaint.findMany({
-			where,
+			where: whereCondition,
 			skip,
-			take: limit,
-			orderBy: { submittedAt: "desc" },
+			take: limitNum,
+			orderBy: { 
+				[sortBy]: sortOrder,
+			},
+
 			include: {
 				category: { select: { name: true } },
 				department: { select: { name: true } },
@@ -109,7 +203,7 @@ const getAllComplaints = async (filters: {
 				citizen: { select: { name: true, phone: true } }, // Admins need to contact citizens
 			},
 		}),
-		prisma.complaint.count({ where }),
+		prisma.complaint.count({ where: whereCondition }),
 	]);
 
 	return {
@@ -118,7 +212,8 @@ const getAllComplaints = async (filters: {
 			total,
 			page,
 			limit,
-			totalPages: Math.ceil(total / limit),
+			totalPages: Math.ceil(total / limitNum),
+			
 		},
 	};
 };
@@ -143,7 +238,6 @@ const resolveComplaint = async (
 	// 2. Use Enum for safety and include DISPUTED as a blocked state
 	const BLOCKED_STATUSES: ComplaintStatus[] = [
 		ComplaintStatus.RESOLVED,
-		ComplaintStatus.CONFIRMED,
 		ComplaintStatus.CLOSED,
 		ComplaintStatus.DISPUTED,
 	];
@@ -200,44 +294,118 @@ const confirmComplaint = async (complaintId: string, userId: string) => {
 	return await prisma.complaint.update({
 		where: { id: complaintId },
 		data: {
-			status: ComplaintStatus.CONFIRMED,
-			confirmedAt: new Date(),
+			status: ComplaintStatus.CLOSED,
+			closedAt: new Date(),
 		},
 	});
 };
 
 // staff
-const getAssignedComplaints = async (
-	userId: string,
-	filters: {
-		page?: number;
-		limit?: number;
-		status?: string;
-	},
-) => {
-	const { page = 1, limit = 10, status } = filters;
-	const skip = (page - 1) * limit;
+const getAssignedComplaints = async (user:Role, query: IQuery, userId: string, departmentId: string) => {
+	const { 
+		status, 
+		priority, 
+		searchTerm, 
+		page = 1, 
+		limit = 10, 
+		sortBy = "submittedAt", 
+		sortOrder = "desc" 
+	} = query;
 
-	const where: any = { assignedStaffId: userId };
-	if (status) where.status = status;
+	const pageNum = Number(page);
+	const limitNum = Number(limit);
+	const skip = (pageNum - 1) * limitNum;
+
+	const andConditions: ComplaintWhereInput[] = [];
+
+	// 1. Role-Based Visibility Logic (§7.2)
+	if (user === Role.STAFF) {
+		// Staff can see:
+		// A. Complaints assigned to them
+		// B. Unassigned complaints in their own department
+		andConditions.push({
+			OR: [
+				{ assignedStaffId: userId }, // Complaints assigned to this staff
+				{ 
+					AND: [
+						{ assignedStaffId: null },
+						{ departmentId:departmentId } // Assuming user object has staffProfile
+					]
+				}
+			]
+		});
+	} else if (user === Role.CITIZEN) {
+		// Citizens only see their own complaints
+		andConditions.push({ citizenId: userId });
+	}
+	// Admin/SuperAdmin see all, so no extra filter needed here unless we want to restrict by dept
+
+	// 2. Filtering
+	if (status) {
+		andConditions.push({ status: status });
+	}
+
+	if (priority) {
+		andConditions.push({ priority: priority });
+	}
+
+	if (searchTerm) {
+		andConditions.push({
+			OR: [
+				{ description: { contains: searchTerm, mode: "insensitive" } },
+				{ location: { contains: searchTerm, mode: "insensitive" } }, // If location is stored as text
+				{ category: { name: { contains: searchTerm, mode: "insensitive" } } },
+			],
+		});
+	}
+
+	// Optional: Filter by Department if provided in query (mostly for Admins)
+	if (query.departmentId) {
+		andConditions.push({ departmentId: query.departmentId });
+	}
+
+	// 3. Query Execution
+	const whereCondition = andConditions.length > 0 ? { AND: andConditions } : {};
 
 	const [complaints, total] = await prisma.$transaction([
 		prisma.complaint.findMany({
-			where,
+			where: whereCondition,
 			skip,
-			take: limit,
-			orderBy: { submittedAt: "desc" },
+			take: limitNum,
+			orderBy: {
+				[sortBy]: sortOrder,
+			},
 			include: {
 				category: { select: { name: true } },
-				citizen: { select: { name: true, phone: true } },
+				department: { select: { name: true } },
+				assignedStaff: { 
+					select: { 
+						name: true, 
+						phone: true,
+						email: true
+					} 
+				},
+				citizen: { 
+					select: { 
+						name: true, 
+						phone: true,
+						email: true
+					} 
+				},
+				// Include logs if needed for quick status check, otherwise keep it light
 			},
 		}),
-		prisma.complaint.count({ where }),
+		prisma.complaint.count({ where: whereCondition }),
 	]);
 
 	return {
 		data: complaints,
-		meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
+		meta: {
+			total,
+			page: pageNum,
+			limit: limitNum,
+			totalPages: Math.ceil(total / limitNum),
+		},
 	};
 };
 
@@ -380,7 +548,6 @@ const assignComplaint = async (
 
 	const BLOCKED_STATUSES: ComplaintStatus[] = [
 		ComplaintStatus.RESOLVED,
-		ComplaintStatus.CONFIRMED,
 		ComplaintStatus.CLOSED,
 	];
 
@@ -436,46 +603,110 @@ const assignComplaint = async (
 
 // complaint.service.ts
 const transitionStatus = async (
-  complaintId: string,
-  toStatus: ComplaintStatus,
-  performedBy: string,
-  note: string,
-  extraData: Record<string, any> = {},
+	complaintId: string,
+	toStatus: ComplaintStatus,
+	performedBy: string,
+	note: string,
+	extraData: Record<string, any> = {},
 ) => {
-  const complaint = await prisma.complaint.findUnique({ where: { id: complaintId } });
-  if (!complaint) throw new AppError(httpStatus.NOT_FOUND, "Complaint not found");
+	const complaint = await prisma.complaint.findUnique({
+		where: { id: complaintId },
+	});
+	if (!complaint)
+		throw new AppError(httpStatus.NOT_FOUND, "Complaint not found");
 
-  const allowed = STATUS_TRANSITIONS[complaint.status] ?? [];
-  if (!allowed.includes(toStatus)) {
-    throw new AppError(
-      httpStatus.BAD_REQUEST,
-      `Cannot move from '${complaint.status}' to '${toStatus}'`,
-    );
-  }
+	const allowed = STATUS_TRANSITIONS[complaint.status] ?? [];
+	if (!allowed.includes(toStatus)) {
+		throw new AppError(
+			httpStatus.BAD_REQUEST,
+			`Cannot move from '${complaint.status}' to '${toStatus}'`,
+		);
+	}
 
-  const oldStatus = complaint.status; // captured correctly, once, in one place
-  const timestampField = STATUS_TIMESTAMP_FIELD[toStatus];
+	const oldStatus = complaint.status; // captured correctly, once, in one place
+	const timestampField = STATUS_TIMESTAMP_FIELD[toStatus];
 
-  return prisma.$transaction(async (tx) => {
-    const updated = await tx.complaint.update({
-      where: { id: complaintId },
-      data: {
-        status: toStatus,
-        ...(timestampField ? { [timestampField]: new Date() } : {}),
-        ...extraData,
-      },
-    });
+	return prisma.$transaction(async (tx) => {
+		const updated = await tx.complaint.update({
+			where: { id: complaintId },
+			data: {
+				status: toStatus,
+				...(timestampField ? { [timestampField]: new Date() } : {}),
+				...extraData,
+			},
+		});
 
-    await tx.complaintStatusLog.create({
-      data: { complaintId, oldStatus, newStatus: toStatus, performedBy, note },
-    });
+		await tx.complaintStatusLog.create({
+			data: { complaintId, oldStatus, newStatus: toStatus, performedBy, note },
+		});
 
-    return updated;
-  });
+		return updated;
+	});
 };
 
+// DISPUTED → IN_PROGRESS, admin or the originally-assigned staff
+const reopenDisputedComplaint = async (
+	complaintId: string,
+	performedBy: string,
+	performerRole: Role,
+) => {
+	const complaint = await prisma.complaint.findUnique({
+		where: {
+			id: complaintId,
+		},
+	});
+
+	if (!complaint)
+		throw new AppError(httpStatus.NOT_FOUND, "Complaint not found");
+
+	const isAdmin =
+		performerRole === Role.ADMIN || performerRole === Role.SUPER_ADMIN;
+	const isAssignedStaff =
+		performerRole === Role.STAFF && complaint.assignedStaffId === performedBy;
+	if (!isAdmin && !isAssignedStaff) {
+		throw new AppError(
+			httpStatus.FORBIDDEN,
+			"Only an admin or the assigned staff member can reopen this complaint",
+		);
+	}
+
+	return transitionStatus(
+		complaintId,
+		ComplaintStatus.IN_PROGRESS,
+		performedBy,
+		"Dispute reopened, work resumed",
+	);
+};
+
+// citizen: RESOLVED → DISPUTED, reason required per spec
+const disputeComplaint = async (
+	complaintId: string,
+	userId: string,
+	reason: string,
+) => {
+	const complaint = await prisma.complaint.findUnique({
+		where: { id: complaintId },
+		select: { citizenId: true },
+	});
+	if (!complaint)
+		throw new AppError(httpStatus.NOT_FOUND, "Complaint not found");
+	if (complaint.citizenId !== userId) {
+		throw new AppError(
+			httpStatus.FORBIDDEN,
+			"You are not authorized to dispute this complaint",
+		);
+	}
+
+	return transitionStatus(
+		complaintId,
+		ComplaintStatus.DISPUTED,
+		userId,
+		`Disputed: ${reason}`,
+	);
+};
 export const ComplaintServices = {
 	createComplaint,
+	acknowledgeComplaint,
 	getMyComplaints,
 	getSingleComplaintById,
 	getAllComplaints,
@@ -487,4 +718,7 @@ export const ComplaintServices = {
 	updatePriority,
 	moveToReview,
 	assignComplaint,
+	disputeComplaint,
+	reopenDisputedComplaint,
+	transitionStatus,
 };

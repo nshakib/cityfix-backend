@@ -20,7 +20,6 @@ export const globalErrorHandler = async (
 	let errorMessage = err.message || "Internal Server Error";
 	const errorName = err.name || "Internal Server Error";
 
-	
 	let message: string = err.message || "Internal Server Error";
 	let errorSources: { path: string | number; message: string }[] = [];
 	// let errorDetails = err.stack
@@ -74,14 +73,15 @@ export const globalErrorHandler = async (
 		statusCode = err.statusCode;
 		message = err.message;
 		errorSources = [{ path: "", message: err.message }];
-	} 
+	}
 	// 2. Handle Zod Validation Errors
 	else if (err instanceof ZodError) {
 		statusCode = httpStatus.BAD_REQUEST;
 		message = "Validation Error";
 		errorSources = err.issues.map((issue) => ({
-			path: issue.path.length > 0 ? String(issue.path[issue.path.length - 1]) : "",
+			path:
+				issue.path.length > 0 ? String(issue.path[issue.path.length - 1]) : "",
 			message: issue.message,
-	}));
-} 
+		}));
+	}
 };

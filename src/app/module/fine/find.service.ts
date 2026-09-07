@@ -2,7 +2,11 @@ import httpStatus from "http-status";
 import { prisma } from "../../lib/prisma";
 import { AppError } from "../../utils/AppError";
 import { FineStatus, Role } from "../../../generated/prisma/enums";
-import type { ICreateFine, IDisputeFine, IGetFinesFilters } from "./find.interface";
+import type {
+	ICreateFine,
+	IDisputeFine,
+	IGetFinesFilters,
+} from "./find.interface";
 
 // 1. Issue a Fine (Staff Only)
 const createFine = async (

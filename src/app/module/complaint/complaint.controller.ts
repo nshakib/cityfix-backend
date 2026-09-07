@@ -5,7 +5,7 @@ import { ComplaintServices } from "./complaint.service";
 import { sendResponse } from "../../utils/sendResponse";
 import httpStatus from "http-status";
 import { prisma } from "../../lib/prisma";
-import { ComplaintStatus, Role } from "../../../generated/prisma/enums";
+import { ComplaintStatus, type Role } from "../../../generated/prisma/enums";
 
 const createComplaint = catchAsync(async (req: Request, res: Response) => {
 	const payload = req.body;
@@ -23,6 +23,24 @@ const createComplaint = catchAsync(async (req: Request, res: Response) => {
 		message: "Complaint created successfully",
 		data: result,
 	});
+});
+
+const acknowledgeComplaint = catchAsync(async (req: Request, res: Response) => {
+  const userId = req.user?.userId;
+  const role = req.user?.role as Role;
+  const complaintId = req.params.id as string;
+  const note = req.body?.note;
+
+  if (!userId) throw new AppError(httpStatus.UNAUTHORIZED, "Auth required");
+
+  const result = await ComplaintServices.acknowledgeComplaint(complaintId, role, note, userId);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Complaint acknowledged successfully",
+    data: result,
+  });
 });
 
 const getMyComplaints = catchAsync(async (req: Request, res: Response) => {
@@ -62,8 +80,12 @@ const getSingleComplaint = catchAsync(async (req: Request, res: Response) => {
 });
 
 const getAllComplaints = catchAsync(async (req: Request, res: Response) => {
+	
 	const filters = req.query;
-	const result = await ComplaintServices.getAllComplaints(filters);
+	const departmentId = req.params.departmentId as string;
+
+
+	const result = await ComplaintServices.getAllComplaints(filters, departmentId);
 	sendResponse(res, {
 		statusCode: httpStatus.OK,
 		success: true,
@@ -115,15 +137,15 @@ const confirmComplaint = catchAsync(async (req: Request, res: Response) => {
 	});
 });
 
-const getAssignedComplaints = catchAsync(
-	async (req: Request, res: Response) => {
-		const userId = req.user?.userId;
-		if (!userId) throw new AppError(httpStatus.UNAUTHORIZED, "Auth required");
+const getAssignedComplaints = catchAsync( async (req: Request, res: Response) => {
 
-		const result = await ComplaintServices.getAssignedComplaints(
-			userId,
-			req.query,
-		);
+		const query = req.query;
+		const role = req.user?.role;
+		const userId = req.user?.userId as string;
+		const departmentId = req.params.departmentId as string;
+		if (!role) throw new AppError(httpStatus.UNAUTHORIZED, "Auth required");
+
+		const result = await ComplaintServices.getAssignedComplaints(role, query, userId, departmentId);
 
 		sendResponse(res, {
 			statusCode: httpStatus.OK,
@@ -195,7 +217,9 @@ const updatePriority = catchAsync(async (req: Request, res: Response) => {
 });
 
 const moveToReview = async (complaintId: string, adminId: string) => {
-	const complaint = await prisma.complaint.findUnique({ where: { id: complaintId } });
+	const complaint = await prisma.complaint.findUnique({
+		where: { id: complaintId },
+	});
 
 	if (!complaint) {
 		throw new AppError(httpStatus.NOT_FOUND, "Complaint not found");
@@ -229,100 +253,66 @@ const moveToReview = async (complaintId: string, adminId: string) => {
 	});
 };
 
-const disputeComplaint = async (complaintId: string, userId: string, reason?: string) => {
-	const complaint = await prisma.complaint.findUnique({
-		where: { id: complaintId },
-		select: { status: true, citizenId: true },
-	});
+const reopenDisputedComplaint = catchAsync(
+	async (req: Request, res: Response) => {
+		const userId = req.user?.userId;
+		const performerRole = req.user?.role as Role;
+		const complaintId = req.params.id as string;
 
-	if (!complaint) throw new AppError(httpStatus.NOT_FOUND, "Complaint not found");
+		if (!userId) throw new AppError(httpStatus.UNAUTHORIZED, "Auth required");
+		if (!complaintId)
+			throw new AppError(
+				httpStatus.BAD_REQUEST,
+				"A valid Complaint id is required",
+			);
 
-	if (complaint.citizenId !== userId) {
-		throw new AppError(httpStatus.FORBIDDEN, "You are not authorized to dispute this complaint");
-	}
+		const result = await ComplaintServices.reopenDisputedComplaint(
+			complaintId,
+			userId,
+			performerRole,
+		);
+		sendResponse(res, {
+			statusCode: httpStatus.OK,
+			success: true,
+			message: "Dispute reopened",
+			data: result,
+		});
+	},
+);
 
-	if (complaint.status !== ComplaintStatus.RESOLVED) {
+const disputeComplaint = catchAsync(async (req: Request, res: Response) => {
+	const userId = req.user?.userId;
+	const complaintId = req.params.id as string;
+	const { reason } = req.body;
+	if (!userId) throw new AppError(httpStatus.UNAUTHORIZED, "Auth required");
+	if (!complaintId)
 		throw new AppError(
 			httpStatus.BAD_REQUEST,
-			"Complaint must be in RESOLVED status to dispute",
+			"A valid Complaint id is required",
 		);
-	}
-
-	const oldStatus = complaint.status;
-
-	return await prisma.$transaction(async (tx) => {
-		const updated = await tx.complaint.update({
-			where: { id: complaintId },
-			data: { status: ComplaintStatus.DISPUTED, disputedAt: new Date() },
-		});
-
-		await tx.complaintStatusLog.create({
-			data: {
-				complaintId,
-				oldStatus,
-				newStatus: ComplaintStatus.DISPUTED,
-				performedBy: userId,
-				note: reason ? `Disputed: ${reason}` : "Citizen disputed the resolution",
-			},
-		});
-		return updated;
+	const result = await ComplaintServices.disputeComplaint(
+		complaintId,
+		userId,
+		reason,
+	);
+	sendResponse(res, {
+		statusCode: httpStatus.OK,
+		success: true,
+		message: "Complaint disputed successfully",
+		data: result,
 	});
-};
-
-const reopenDisputedComplaint = async (
-	complaintId: string,
-	performedBy: string,
-	performerRole: Role,
-) => {
-	const complaint = await prisma.complaint.findUnique({ where: { id: complaintId } });
-
-	if (!complaint) throw new AppError(httpStatus.NOT_FOUND, "Complaint not found");
-
-	if (complaint.status !== ComplaintStatus.DISPUTED) {
-		throw new AppError(
-			httpStatus.BAD_REQUEST,
-			`Cannot reopen: complaint is currently '${complaint.status}', expected DISPUTED`,
-		);
-	}
-
-	const isAdmin = performerRole === Role.ADMIN || performerRole === Role.SUPER_ADMIN;
-	const isAssignedStaff =
-		performerRole === Role.STAFF && complaint.assignedStaffId === performedBy;
-
-	if (!isAdmin && !isAssignedStaff) {
-		throw new AppError(
-			httpStatus.FORBIDDEN,
-			"Only an admin or the assigned staff member can reopen this complaint",
-		);
-	}
-
-	const oldStatus = complaint.status;
-
-	return await prisma.$transaction(async (tx) => {
-		const updated = await tx.complaint.update({
-			where: { id: complaintId },
-			data: { status: ComplaintStatus.IN_PROGRESS, inProgressAt: new Date() },
-		});
-
-		await tx.complaintStatusLog.create({
-			data: {
-				complaintId,
-				oldStatus,
-				newStatus: ComplaintStatus.IN_PROGRESS,
-				performedBy,
-				note: "Dispute reopened, work resumed",
-			},
-		});
-		return updated;
-	});
-};
+});
 
 const assignComplaint = catchAsync(async (req: Request, res: Response) => {
 	const assignComplaintId = req.params.id as string;
 	const { staffId } = req.body;
-	const adminId = req.user!.userId;
+	const adminId = req.user?.userId as string;
 
-	const result = await ComplaintServices.assignComplaint(assignComplaintId, adminId, staffId);
+	const result = await ComplaintServices.assignComplaint(
+		assignComplaintId,
+		adminId,
+		staffId,
+	);
 
 	sendResponse(res, {
 		statusCode: httpStatus.OK,
@@ -333,6 +323,7 @@ const assignComplaint = catchAsync(async (req: Request, res: Response) => {
 });
 export const ComplaintController = {
 	createComplaint,
+	acknowledgeComplaint,
 	getMyComplaints,
 	getSingleComplaint,
 	getAllComplaints,

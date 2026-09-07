@@ -23,14 +23,24 @@ export const createComplaintSchema = z
 			.max(255),
 
 		categoryId: z.string().uuid({ message: "Invalid category ID format" }),
-		
 
 		photos: z
 			.array(z.string().url({ message: "Each photo must be a valid URL" }))
 			.optional()
 			.default([]),
+		priority: z
+			.enum(Object.values(ComplaintPriority) as [string, ...string[]])
+			.optional()
+			.default(ComplaintPriority.MEDIUM),
 	})
 	.strict();
+
+export const acknowledgeComplaintSchema = z.object({
+  body: z.object({
+    note: z.string().optional(), // Optional note for rerouting or confirmation
+  }).optional(),
+});
+
 export const getMyComplaintsSchema = z.object({
 	status: z
 		.enum(Object.values(ComplaintStatus) as [string, ...string[]])
@@ -116,4 +126,11 @@ export const rerouteComplaintSchema = z.object({
 
 export const assignComplaintSchema = z.object({
 	staffId: z.string().uuid({ message: "Invalid staff ID" }),
+});
+
+export const disputeComplaintSchema = z.object({
+	reason: z
+		.string()
+		.min(10, { message: "Reason must be at least 10 characters" })
+		.max(500, { message: "Reason cannot exceed 500 characters" }),
 });
