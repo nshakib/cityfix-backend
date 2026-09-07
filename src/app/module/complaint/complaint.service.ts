@@ -5,6 +5,7 @@ import {
 } from "../../../generated/prisma/enums";
 import { prisma } from "../../lib/prisma";
 import { AppError } from "../../utils/AppError";
+import { STATUS_TIMESTAMP_FIELD, STATUS_TRANSITIONS } from "./complaint.constants";
 import type { ICreateComplaint, IResolveComplaint } from "./complaint.interface";
 import httpStatus from "http-status";
 
@@ -369,10 +370,45 @@ const assignComplaint = async (
 	adminId: string,
 	staffId: string,
 ) => {
+	const complaint = await prisma.complaint.findUnique({
+		where: { id: complaintId },
+	});
+
+	if (!complaint) {
+		throw new AppError(httpStatus.NOT_FOUND, "Complaint not found");
+	}
+
+	const BLOCKED_STATUSES: ComplaintStatus[] = [
+		ComplaintStatus.RESOLVED,
+		ComplaintStatus.CONFIRMED,
+		ComplaintStatus.CLOSED,
+	];
+
+	if (BLOCKED_STATUSES.includes(complaint.status)) {
+		throw new AppError(
+			httpStatus.BAD_REQUEST,
+			`Cannot assign: complaint is currently '${complaint.status}'`,
+		);
+	}
+
 	const staff = await prisma.user.findUnique({ where: { id: staffId } });
+
 	if (!staff || staff.role !== Role.STAFF) {
 		throw new AppError(httpStatus.BAD_REQUEST, "Invalid staff member");
 	}
+
+	if (staff.status !== "ACTIVE") {
+		throw new AppError(httpStatus.BAD_REQUEST, "Staff member is not active");
+	}
+
+	if (staff.departmentId !== complaint.departmentId) {
+		throw new AppError(
+			httpStatus.BAD_REQUEST,
+			"Staff member does not belong to this complaint's department",
+		);
+	}
+
+	const oldStatus = complaint.status; // capture BEFORE update
 
 	return await prisma.$transaction(async (tx) => {
 		const updated = await tx.complaint.update({
@@ -387,14 +423,55 @@ const assignComplaint = async (
 		await tx.complaintStatusLog.create({
 			data: {
 				complaintId,
-				oldStatus: updated.status,
+				oldStatus,
 				newStatus: ComplaintStatus.ASSIGNED,
 				performedBy: adminId,
 				note: `Assigned to ${staff.name}`,
 			},
 		});
+
 		return updated;
 	});
+};
+
+// complaint.service.ts
+const transitionStatus = async (
+  complaintId: string,
+  toStatus: ComplaintStatus,
+  performedBy: string,
+  note: string,
+  extraData: Record<string, any> = {},
+) => {
+  const complaint = await prisma.complaint.findUnique({ where: { id: complaintId } });
+  if (!complaint) throw new AppError(httpStatus.NOT_FOUND, "Complaint not found");
+
+  const allowed = STATUS_TRANSITIONS[complaint.status] ?? [];
+  if (!allowed.includes(toStatus)) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      `Cannot move from '${complaint.status}' to '${toStatus}'`,
+    );
+  }
+
+  const oldStatus = complaint.status; // captured correctly, once, in one place
+  const timestampField = STATUS_TIMESTAMP_FIELD[toStatus];
+
+  return prisma.$transaction(async (tx) => {
+    const updated = await tx.complaint.update({
+      where: { id: complaintId },
+      data: {
+        status: toStatus,
+        ...(timestampField ? { [timestampField]: new Date() } : {}),
+        ...extraData,
+      },
+    });
+
+    await tx.complaintStatusLog.create({
+      data: { complaintId, oldStatus, newStatus: toStatus, performedBy, note },
+    });
+
+    return updated;
+  });
 };
 
 export const ComplaintServices = {
