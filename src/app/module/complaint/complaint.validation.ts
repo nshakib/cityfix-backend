@@ -41,6 +41,10 @@ export const acknowledgeComplaintSchema = z.object({
   }).optional(),
 });
 
+export const startComplaintSchema = z.object({
+  body: z.object({}).optional(), // Allow empty body
+});
+
 export const getMyComplaintsSchema = z.object({
 	status: z
 		.enum(Object.values(ComplaintStatus) as [string, ...string[]])

@@ -14,6 +14,7 @@ import {
 	updatePrioritySchema,
 	assignComplaintSchema,
 	disputeComplaintSchema,
+  startComplaintSchema,
 } from "./complaint.validation";
 
 const router = Router();
@@ -80,7 +81,7 @@ router.patch(
 router.patch(
 	"/:id/start",
 	auth(Role.STAFF),
-	validateRequest(updateStatusSchema),
+	validateRequest(startComplaintSchema),
 	ComplaintController.startComplaint,
 );
 
