@@ -239,8 +239,6 @@ Fine issuance and dispute management.
 | PATCH  | `/fines/:id/uphold`   | Admin/Super Admin | Uphold dispute |
 | PATCH  | `/fines/:id/waive`    | Admin/Super Admin | Waive fine     |
 | PATCH  | `/fines/:id/void`     | Admin/Super Admin | Void fine      |
-| POST   | `/fines/:id/payment`  | Citizen/Guest     | Create payment |
-| GET    | `/fines/:id/payments` | Authorized        | View payments  |
 
 ### Fine lifecycle
 

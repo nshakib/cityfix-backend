@@ -1,7 +1,7 @@
 import { DepartmentStatus } from "../../../generated/prisma/enums";
 import { prisma } from "../../lib/prisma";
 import { AppError } from "../../utils/AppError";
-import {
+import type {
 	ICategoryStatus,
 	ICreateCategory,
 	IUpdateCategory,

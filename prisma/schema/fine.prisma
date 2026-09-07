@@ -30,6 +30,16 @@ model Fine {
   category          Category    @relation(fields: [categoryId], references: [id])
   complaint         Complaint?  @relation(fields: [complaintId], references: [id])
 
+  // Dispute Fields (Added)
+  disputeReason     String?     // Why the citizen is disputing
+  disputeEvidence   String?     // URL to photo/document
+  disputedAt        DateTime?   // When it was disputed
+  
+  reviewedBy        String?     // Admin ID who reviewed it
+  reviewedAt        DateTime?   // When admin made the decision
+  reviewNote        String?     // Admin's explanation for upholding/waiving
+
+
   statusLogs        FineStatusLog[]
   payments          Payment[]
 }

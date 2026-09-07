@@ -1,7 +1,7 @@
 import type { UploadApiResponse } from "cloudinary";
 import { cloudinary } from "../../lib/cloudinary";
 import { prisma } from "../../lib/prisma";
-import { IChangePassword, IUpdateUser } from "./user.interface";
+import type { IChangePassword, IUpdateUser } from "./user.interface";
 import { AppError } from "../../utils/AppError";
 import httpStatus from "http-status";
 import bcrypt from "bcryptjs";

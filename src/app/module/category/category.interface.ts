@@ -1,4 +1,4 @@
-import { CategoryStatus } from "../../../generated/prisma/enums";
+import type { CategoryStatus } from "../../../generated/prisma/enums";
 
 export interface ICreateCategory {
 	name: string;

@@ -1,4 +1,4 @@
-import { DepartmentStatus } from "../../../generated/prisma/enums";
+import type { DepartmentStatus } from "../../../generated/prisma/enums";
 
 export interface ICreateDepartment {
 	name: string;
