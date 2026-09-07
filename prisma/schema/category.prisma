@@ -1,6 +1,7 @@
 model Category {
   id           String @id @default(uuid())
   name         String @unique // e.g., "Pothole", "Water Leakage"
+  description  String? 
   departmentId String // FK to Department (the "default mapping")
   createdById  String
 
