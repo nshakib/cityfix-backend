@@ -8,13 +8,13 @@ import {
 	getMyComplaintsSchema,
 	getSingleComplaintSchema,
 	getDepartmentComplaintsSchema,
-	updateStatusSchema,
 	resolveComplaintSchema,
 	confirmComplaintSchema,
 	updatePrioritySchema,
 	assignComplaintSchema,
 	disputeComplaintSchema,
   startComplaintSchema,
+  rejectComplaintSchema,
 } from "./complaint.validation";
 
 const router = Router();
@@ -118,6 +118,13 @@ router.patch(
 	auth(Role.STAFF, Role.ADMIN, Role.SUPER_ADMIN),
 	validateRequest(getSingleComplaintSchema),
 	ComplaintController.reopenDisputedComplaint,
+);
+
+router.patch(
+  "/:id/reject",
+  auth(Role.ADMIN, Role.SUPER_ADMIN),
+  validateRequest(rejectComplaintSchema),
+  ComplaintController.rejectComplaint,
 );
 
 export const ComplaintRoutes = router;

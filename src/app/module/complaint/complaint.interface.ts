@@ -10,8 +10,12 @@ export interface ICreateComplaint {
 	photos?: string[];
 	categoryId: string;
 	userId: string;
+	priority?: ComplaintPriority;
 }
 
 export interface IResolveComplaint {
-	resolutionProof?: string;
+	resolutionProof: {
+		note: string;
+		photoUrl?: string;
+	};
 }

@@ -96,27 +96,30 @@ const getAllComplaints = catchAsync(async (req: Request, res: Response) => {
 });
 
 const resolveComplaint = catchAsync(async (req: Request, res: Response) => {
-	const complaintId = req.params.id as string;
-	const userId = req.user?.userId;
+    const complaintId = req.params.id as string;
+    const user = req.user;
 
-	if (!userId) {
-		throw new AppError(httpStatus.UNAUTHORIZED, "Authentication required");
-	}
+    if (!user) {
+        throw new AppError(
+            httpStatus.UNAUTHORIZED,
+            "Authentication required"
+        );
+    }
 
-	const { resolutionProof } = req.body;
+    const { resolutionProof } = req.body;
 
-	const result = await ComplaintServices.resolveComplaint(
-		complaintId,
-		userId,
-		resolutionProof,
-	);
+    const result = await ComplaintServices.resolveComplaint(
+        complaintId,
+        user,
+        { resolutionProof }
+    );
 
-	sendResponse(res, {
-		statusCode: httpStatus.OK,
-		success: true,
-		message: "Complaint resolved successfully",
-		data: result,
-	});
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: "Complaint resolved successfully",
+        data: result,
+    });
 });
 
 const confirmComplaint = catchAsync(async (req: Request, res: Response) => {
@@ -321,6 +324,22 @@ const assignComplaint = catchAsync(async (req: Request, res: Response) => {
 		data: result,
 	});
 });
+
+const rejectComplaint = catchAsync(async (req: Request, res: Response) => {
+  if (!req.user) throw new AppError(httpStatus.UNAUTHORIZED, "Auth required");
+  
+  const rejectComplaintId = req.params.id as string;
+  const { reason } = req.body;
+
+  const result = await ComplaintServices.rejectComplaint(rejectComplaintId, req.user, reason);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Complaint rejected successfully",
+    data: result,
+  });
+});
 export const ComplaintController = {
 	createComplaint,
 	acknowledgeComplaint,
@@ -337,4 +356,5 @@ export const ComplaintController = {
 	assignComplaint,
 	disputeComplaint,
 	reopenDisputedComplaint,
+  	rejectComplaint
 };

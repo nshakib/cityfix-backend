@@ -7,7 +7,11 @@ import { catchAsync } from "../utils/catchAsync";
 export const validateRequest = (zodSchema: z.ZodObject) => {
 	return catchAsync((req: Request, res: Response, next: NextFunction) => {
 		// const payload = req.body ? req.body : {}
-		const payload = req.body ?? {};
+		const payload = {
+			body : req.body ?? {},
+			query : req.query ? req.query : {},
+			params : req.params ? req.params : {},
+		}
 
 		const result = zodSchema.safeParse(payload);
 
@@ -21,7 +25,9 @@ export const validateRequest = (zodSchema: z.ZodObject) => {
 			);
 		}
 
-		req.body = result.data;
+		req.body = result.data.body;
+		if (result.data.params) req.params = result.data.params as typeof req.params;
+		if (result.data.query) req.query = result.data.query as typeof req.query;
 
 		next();
 	});

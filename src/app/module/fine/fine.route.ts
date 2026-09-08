@@ -1,5 +1,5 @@
 import express from "express";
-import auth from "../../middleware/checkAuth";
+import { auth } from "../../middleware/checkAuth";
 import { Role } from "../../../generated/prisma/enums";
 import { validateRequest } from "../../middleware/validateRequest";
 import {

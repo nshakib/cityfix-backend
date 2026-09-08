@@ -18,7 +18,7 @@ import type {
 import httpStatus from "http-status";
 
 const createComplaint = async (payload: ICreateComplaint, userId: string) => {
-	const { title, description, location, photos, categoryId } = payload;
+	const { title, description, location, photos, categoryId, priority } = payload;
 
 	const category = await prisma.category.findUnique({
 		where: { id: categoryId },
@@ -38,7 +38,7 @@ const createComplaint = async (payload: ICreateComplaint, userId: string) => {
 			departmentId: category.departmentId,
 			citizenId: userId,
 			status: ComplaintStatus.SUBMITTED,
-			priority: ComplaintPriority.MEDIUM,
+			priority: priority as ComplaintPriority,
 		},
 	});
 
@@ -220,59 +220,58 @@ const getAllComplaints = async (query: IQuery, departmentId: string) => {
 
 const resolveComplaint = async (
 	complaintId: string,
-	staffId: string,
+	user:any, // Pass the full user object from req.user
 	payload: IResolveComplaint,
 ) => {
-	const { resolutionProof } = payload;
+	// 1. Permission Check (§7.2 & §6 API Endpoints)
+	if (user.role !== Role.STAFF) {
+        throw new AppError(
+            httpStatus.FORBIDDEN,
+            "Only Staff can resolve complaints"
+        );
+    }
 
-	// 1. Check if complaint exists
+	// if (complaint.assignedStaffId !== user.userId) {
+	// 	throw new AppError(httpStatus.FORBIDDEN, "Only Staff can resolve complaints");
+	// }
+
+	// 2. Verify Assignment (§9 Assignment)
+	// Ensure the staff member is actually assigned to this specific complaint
 	const complaint = await prisma.complaint.findUnique({
 		where: { id: complaintId },
-		select: { status: true },
+		select: { assignedStaffId: true, status: true },
 	});
 
 	if (!complaint) {
 		throw new AppError(httpStatus.NOT_FOUND, "Complaint not found");
 	}
 
-	// 2. Use Enum for safety and include DISPUTED as a blocked state
-	const BLOCKED_STATUSES: ComplaintStatus[] = [
-		ComplaintStatus.RESOLVED,
-		ComplaintStatus.CLOSED,
-		ComplaintStatus.DISPUTED,
-	];
-
-	if (BLOCKED_STATUSES.includes(complaint.status)) {
-		throw new AppError(
-			httpStatus.BAD_REQUEST,
-			`Cannot resolve: Complaint is currently '${complaint.status}'`,
-		);
+	if (complaint.assignedStaffId !== user.userId) {
+		throw new AppError(httpStatus.FORBIDDEN, "You are not assigned to this complaint");
 	}
 
-	// 3. Transaction: Update Status + Create Audit Log
-	const [updatedComplaint] = await prisma.$transaction([
-		prisma.complaint.update({
-			where: { id: complaintId },
-			data: {
-				status: ComplaintStatus.RESOLVED,
-				resolutionProof: resolutionProof || null,
-				resolvedAt: new Date(),
-			},
-		}),
-		prisma.complaintStatusLog.create({
-			data: {
-				complaintId,
-				oldStatus: complaint.status,
-				newStatus: ComplaintStatus.RESOLVED,
-				performedBy: staffId,
-				note: resolutionProof
-					? "Resolution proof uploaded"
-					: "Marked as resolved",
-			},
-		}),
-	]);
+	if (complaint.status !== ComplaintStatus.IN_PROGRESS) {
+    throw new AppError(
+        httpStatus.BAD_REQUEST,
+        `Cannot resolve a complaint with status ${complaint.status}`
+    );
+}
 
-	return updatedComplaint;
+	// 3. Convert Object to String for Prisma (§11 Data Models: resolutionProof is String)
+	const resolutionProofString = payload.resolutionProof 
+		? JSON.stringify(payload.resolutionProof) 
+		: null;
+
+	const note = payload.resolutionProof?.note || "Marked as resolved by Staff";
+
+	// 4. Use Centralized Transition Helper (Enforces §8 Lifecycle & Audit Trail)
+	return transitionStatus(
+		complaintId,
+		ComplaintStatus.RESOLVED,
+		user.userId, // Pass userId for the audit log
+		note,
+		{ resolutionProof: resolutionProofString } // Extra data to update in Prisma
+	);
 };
 
 const confirmComplaint = async (complaintId: string, userId: string) => {
@@ -459,7 +458,7 @@ const startComplaint = async (complaintId: string, staffId: string) => {
 	}
 
 	// Logic: Can only start if it's currently ASSIGNED
-	if (complaint.status !== ComplaintStatus.ASSIGNED) {
+	if (complaint.status !== ComplaintStatus.ASSIGNED && complaint.status !== ComplaintStatus.DISPUTED) {
 		throw new AppError(400, `Cannot start: Status is '${complaint.status}'`);
 	}
 
@@ -704,6 +703,40 @@ const disputeComplaint = async (
 		`Disputed: ${reason}`,
 	);
 };
+
+const rejectComplaint = async (complaintId: string, user: any, reason: string) => {
+  // 1. Permission Check (§2.1 & §6)
+  if (user.role !== "ADMIN" && user.role !== "SUPER_ADMIN") {
+    throw new AppError(httpStatus.FORBIDDEN, "Only Admins can reject complaints");
+  }
+
+  // 2. Find Complaint to check current status
+  const complaint = await prisma.complaint.findUnique({
+    where: { id: complaintId },
+  });
+
+  if (!complaint) {
+    throw new AppError(httpStatus.NOT_FOUND, "Complaint not found");
+  }
+
+  // 3. State Transition Check (§8)
+  // Rejection is only allowed from SUBMITTED or ACKNOWLEDGED
+  if (complaint.status !== "SUBMITTED" && complaint.status !== "ACKNOWLEDGED") {
+    throw new AppError(
+      httpStatus.BAD_REQUEST, 
+      `Cannot reject: Complaint is currently '${complaint.status}'. Rejection is only allowed from SUBMITTED or ACKNOWLEDGED.`
+    );
+  }
+
+  // 4. Use Centralized Transition Helper
+  // This handles: updating status, setting rejectedAt, and creating the audit log
+  return transitionStatus(
+    complaintId,
+    ComplaintStatus.REJECTED,
+    user.userId,
+    `Rejected by Admin: ${reason}`
+  );
+};
 export const ComplaintServices = {
 	createComplaint,
 	acknowledgeComplaint,
@@ -721,4 +754,5 @@ export const ComplaintServices = {
 	disputeComplaint,
 	reopenDisputedComplaint,
 	transitionStatus,
+	rejectComplaint
 };
