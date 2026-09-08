@@ -14,16 +14,15 @@ const createFine = async (
 	staffId: string,
 	staffDepartmentId: string,
 ) => {
-	const { citizenId, complaintId, amount, reason, category } = payload;
+	const { citizenId, guestName, guestContact, complaintId, amount, reason, category } = payload;
 
-	// Verify Citizen exists
-	const citizen = await prisma.user.findUnique({ where: { id: citizenId } });
-	if (!citizen || citizen.role !== Role.CITIZEN) {
-		throw new AppError(httpStatus.BAD_REQUEST, "Invalid citizen ID");
+	if (citizenId) {
+		const citizen = await prisma.user.findUnique({ where: { id: citizenId } });
+		if (!citizen || citizen.role !== Role.CITIZEN) {
+			throw new AppError(httpStatus.BAD_REQUEST, "Invalid citizen ID");
+		}
 	}
 
-	// Security: Ensure staff belongs to the department of the fine's category
-	// (Assuming Category has a departmentId relation)
 	const categoryRecord = await prisma.category.findFirst({
 		where: { name: category, departmentId: staffDepartmentId },
 	});
@@ -37,7 +36,9 @@ const createFine = async (
 
 	return await prisma.fine.create({
 		data: {
-			recipientId: citizenId,
+			recipientId: citizenId || null,
+			guestName: citizenId ? null : guestName,
+			guestContact: citizenId ? null : guestContact,
 			issuedBy: staffId,
 			categoryId: categoryRecord.id,
 			complaintId: complaintId || null,

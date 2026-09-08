@@ -1,16 +1,24 @@
 import { z } from "zod";
 import { PaymentGateway } from "../../../generated/prisma/enums";
 
+// Route: POST /payments/fines/:fineId/pay — fineId comes from params, not body
 export const createPaymentSchema = z.object({
-	fineId: z.string().uuid({ message: "Invalid fine ID" }),
-	gateway: z
-		.enum(Object.values(PaymentGateway) as [string, ...string[]])
+	params: z.object({
+		fineId: z.string().uuid({ message: "Invalid fine ID" }),
+	}),
+	body: z
+		.object({
+			gateway: z
+				.enum(Object.values(PaymentGateway) as [string, ...string[]])
+				.optional(),
+		})
 		.optional(),
 });
 
-export const webhookSchema = z.object({
-	transactionRef: z.string(),
-	status: z.string(),
-	amount: z.number().optional(),
-	// Add other gateway-specific fields like 'signature' for verification
+// Route: GET /payments/bkash/callback — bKash sends paymentID + status as query params
+export const bkashCallbackSchema = z.object({
+	query: z.object({
+		paymentID: z.string(),
+		status: z.string(),
+	}),
 });

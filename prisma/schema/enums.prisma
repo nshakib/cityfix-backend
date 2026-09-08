@@ -42,7 +42,7 @@ enum ComplaintPriority {
 enum ComplaintStatus {
   SUBMITTED
   ACKNOWLEDGED
-  REJECTED    
+  REJECTED
   ASSIGNED
   IN_PROGRESS
   RESOLVED

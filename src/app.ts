@@ -15,6 +15,7 @@ import { CategoryRoutes } from "./app/module/category/category.route";
 import { DepartmentRoutes } from "./app/module/department/department.route";
 import { ComplaintRoutes } from "./app/module/complaint/complaint.route";
 import { FineRoutes } from "./app/module/fine/fine.route";
+import { PaymentRoutes } from "./app/module/payment/payment.route";
 
 const app: Application = express();
 
@@ -37,7 +38,8 @@ app.use("/api/v1/user", UserRoutes);
 app.use("/api/v1/categories", CategoryRoutes);
 app.use("/api/v1/departments", DepartmentRoutes);
 app.use("/api/v1/complaints", ComplaintRoutes);
-app.use("/api/v1/fines", FineRoutes); // Fines are a subset of Complaints", ComplaintRoutes);
+app.use("/api/v1/fines", FineRoutes);
+app.use("/api/v1/payments", PaymentRoutes);
 
 // Basic route
 app.get("/", async (req: Request, res: Response) => {

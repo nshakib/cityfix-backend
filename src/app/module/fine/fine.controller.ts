@@ -5,19 +5,28 @@ import { FineServices } from "./find.service";
 import { catchAsync } from "../../utils/catchAsync";
 import { AppError } from "../../utils/AppError";
 import { sendResponse } from "../../utils/sendResponse";
+import { prisma } from "../../lib/prisma";
 
 const createFine = catchAsync(async (req: Request, res: Response) => {
 	const staffId = req.user?.userId;
-	const departmentId = req.params.departmentId as string;
 
-	if (!staffId || !departmentId) {
+	if (!staffId) {
+		throw new AppError(httpStatus.UNAUTHORIZED, "Authentication required");
+	}
+
+	const staff = await prisma.user.findUnique({
+		where: { id: staffId },
+		select: { departmentId: true },
+	});
+
+	if (!staff?.departmentId) {
 		throw new AppError(
 			httpStatus.FORBIDDEN,
 			"Staff must be assigned to a department",
 		);
 	}
 
-	const result = await FineServices.createFine(req.body, staffId, departmentId);
+	const result = await FineServices.createFine(req.body, staffId, staff.departmentId);
 
 	sendResponse(res, {
 		statusCode: httpStatus.CREATED,

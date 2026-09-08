@@ -3,6 +3,8 @@ export interface ICreateFine {
 	complaintId?: string;
 	amount: number;
 	reason: string;
+	guestName?: string;
+	guestContact?: string;
 	category: string;
 }
 

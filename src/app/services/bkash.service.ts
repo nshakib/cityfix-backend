@@ -27,7 +27,7 @@ export const createBkashPayment = async (
 				headers: {
 					"Content-Type": "application/json",
 					Accept: "application/json",
-					authorization: idToken, // ✅ Now strictly a string
+					authorization: idToken,
 					"x-app-key": config.bkash_app_key,
 				},
 				body: JSON.stringify({
@@ -37,6 +37,7 @@ export const createBkashPayment = async (
 					amount: amount.toString(),
 					currency: "BDT",
 					intent: "sale",
+					merchantInvoiceNumber: `${reference}-${Date.now()}`, // unique per attempt, avoids duplicate-invoice rejection on retry
 				}),
 			},
 		);
@@ -60,7 +61,7 @@ export const executeBkashPayment = async (paymentID: string) => {
 	try {
 		const idToken = await getBkashIdToken();
 
-		// ✅ Safety Check: Ensure token is valid before proceeding
+		// Safety Check: Ensure token is valid before proceeding
 		if (!idToken) {
 			throw new AppError(
 				httpStatus.SERVICE_UNAVAILABLE,
@@ -75,7 +76,7 @@ export const executeBkashPayment = async (paymentID: string) => {
 				headers: {
 					"Content-Type": "application/json",
 					Accept: "application/json",
-					authorization: idToken, // ✅ Now TypeScript knows this is strictly a string
+					authorization: idToken,
 					"x-app-key": config.bkash_app_key,
 				},
 				body: JSON.stringify({ paymentID }),
@@ -105,7 +106,7 @@ export const refundBkashPayment = async (
 	try {
 		const idToken = await getBkashIdToken();
 
-		// ✅ Safety Check
+		// Safety Check
 		if (!idToken) {
 			throw new AppError(
 				httpStatus.SERVICE_UNAVAILABLE,
@@ -120,10 +121,14 @@ export const refundBkashPayment = async (
 				headers: {
 					"Content-Type": "application/json",
 					Accept: "application/json",
-					authorization: idToken, // ✅ Now strictly a string
+					authorization: idToken,
 					"x-app-key": config.bkash_app_key,
 				},
-				body: JSON.stringify({ paymentID, amount, trxID }),
+				body: JSON.stringify({
+					paymentID,
+					amount: amount.toString(), // fixed: bKash expects amount as a string, consistent with createBkashPayment
+					trxID,
+				}),
 			},
 		);
 

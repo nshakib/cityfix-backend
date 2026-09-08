@@ -35,7 +35,7 @@ model Complaint {
   fines      Fine[]
   statusLogs ComplaintStatusLog[]
 
-  rejectedAt DateTime?  
+  rejectedAt DateTime?
   closedAt   DateTime?
 
   @@index([citizenId])

@@ -34,7 +34,7 @@ model User {
   issuedFines   Fine[] @relation("FineIssuer")
 
   categoriesCreated Category[] @relation("CategoryCreatedBy")
-  organization String?
+  organization      String?
 
   notifications Notification[] @relation(name: "UserNotifications")
 

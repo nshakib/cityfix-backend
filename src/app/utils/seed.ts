@@ -13,7 +13,7 @@ async function main() {
 	});
 
 	// 2. Create Admin User (Required for Category creation)
-	const hashedPassword = await bcrypt.hash("Password123", 10);
+	 const hashedPassword = await bcrypt.hash("Password123", 10);
 
 	const admin = await prisma.user.upsert({
 		where: { email: "admin@test.com" },

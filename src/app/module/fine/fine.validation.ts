@@ -4,16 +4,20 @@ import { FineStatus } from "../../../generated/prisma/enums";
 export const createFineSchema = z.object({
 	body: z
 		.object({
-			citizenId: z.string().uuid().optional(),
-			guestName: z.string().min(2).optional(),
-			guestContact: z.string().min(5).optional(),
-			complaintId: z.string().uuid().optional(),
-			amount: z.number().positive(),
-			reason: z.string().min(10),
-			category: z.string().min(3),
+			citizenId: z.string().uuid({ message: "Invalid citizen ID" }).optional(),
+			guestName: z.string().min(2, "Guest name is required").optional(),
+			guestContact: z
+				.string()
+				.min(5, "Guest contact is required")
+				.optional(),
+			complaintId: z.string().uuid({ message: "Invalid complaint ID" }).optional(),
+			amount: z.number().positive({ message: "Amount must be greater than zero" }),
+			reason: z.string().min(10, "Reason must be at least 10 characters"),
+			category: z.string().min(3, "Category is required"),
 		})
 		.refine((data) => data.citizenId || (data.guestName && data.guestContact), {
-			message: "Either citizenId or guestName + guestContact is required",
+			message: "Provide either citizenId or both guestName and guestContact",
+			path: ["citizenId"],
 		}),
 });
 

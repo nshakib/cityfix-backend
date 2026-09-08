@@ -5,6 +5,7 @@ model Payment {
   amount Decimal
 
   gateway        PaymentGateway @default(BKASH)
+  paymentId      String?
   transactionRef String?
   status         PaymentStatus  @default(PENDING)
 
