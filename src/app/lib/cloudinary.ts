@@ -9,11 +9,4 @@ Cloudinary.config({
 	api_secret: config.cloudinary_api_secret,
 });
 
-Cloudinary.api
-	.ping()
-	.then((res) => console.log("✅ CLOUDINARY CREDENTIALS ARE VALID:", res))
-	.catch((err) =>
-		console.error("❌ CLOUDINARY AUTHENTICATION FAILED:", err.message),
-	);
-
 export const cloudinary = Cloudinary;
