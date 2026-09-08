@@ -26,7 +26,11 @@ const createFine = catchAsync(async (req: Request, res: Response) => {
 		);
 	}
 
-	const result = await FineServices.createFine(req.body, staffId, staff.departmentId);
+	const result = await FineServices.createFine(
+		req.body,
+		staffId,
+		staff.departmentId,
+	);
 
 	sendResponse(res, {
 		statusCode: httpStatus.CREATED,

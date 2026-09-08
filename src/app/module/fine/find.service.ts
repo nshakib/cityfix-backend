@@ -14,7 +14,15 @@ const createFine = async (
 	staffId: string,
 	staffDepartmentId: string,
 ) => {
-	const { citizenId, guestName, guestContact, complaintId, amount, reason, category } = payload;
+	const {
+		citizenId,
+		guestName,
+		guestContact,
+		complaintId,
+		amount,
+		reason,
+		category,
+	} = payload;
 
 	if (citizenId) {
 		const citizen = await prisma.user.findUnique({ where: { id: citizenId } });

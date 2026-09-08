@@ -10,7 +10,8 @@ const router = express.Router();
 
 router.post(
 	"/fines/:fineId/pay",
-	auth(Role.CITIZEN),validateRequest(createPaymentSchema),
+	auth(Role.CITIZEN),
+	validateRequest(createPaymentSchema),
 	PaymentController.initiatePayment,
 );
 

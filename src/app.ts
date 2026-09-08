@@ -16,6 +16,7 @@ import { DepartmentRoutes } from "./app/module/department/department.route";
 import { ComplaintRoutes } from "./app/module/complaint/complaint.route";
 import { FineRoutes } from "./app/module/fine/fine.route";
 import { PaymentRoutes } from "./app/module/payment/payment.route";
+import helmet from "helmet";
 
 const app: Application = express();
 
@@ -30,6 +31,7 @@ app.use(
 app.use(express.urlencoded({ extended: true }));
 
 // Middleware to parse JSON bodies
+app.use(helmet());
 app.use(express.json());
 app.use(cookieParser());
 

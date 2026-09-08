@@ -6,12 +6,14 @@ export const createFineSchema = z.object({
 		.object({
 			citizenId: z.string().uuid({ message: "Invalid citizen ID" }).optional(),
 			guestName: z.string().min(2, "Guest name is required").optional(),
-			guestContact: z
+			guestContact: z.string().min(5, "Guest contact is required").optional(),
+			complaintId: z
 				.string()
-				.min(5, "Guest contact is required")
+				.uuid({ message: "Invalid complaint ID" })
 				.optional(),
-			complaintId: z.string().uuid({ message: "Invalid complaint ID" }).optional(),
-			amount: z.number().positive({ message: "Amount must be greater than zero" }),
+			amount: z
+				.number()
+				.positive({ message: "Amount must be greater than zero" }),
 			reason: z.string().min(10, "Reason must be at least 10 characters"),
 			category: z.string().min(3, "Category is required"),
 		})

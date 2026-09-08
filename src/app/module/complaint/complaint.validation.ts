@@ -188,7 +188,7 @@ export const disputeComplaintSchema = z.object({
 });
 
 export const rejectComplaintSchema = z.object({
-  body: z.object({
-    reason: z.string().min(5, "Reason for rejection is required"),
-  }),
+	body: z.object({
+		reason: z.string().min(5, "Reason for rejection is required"),
+	}),
 });

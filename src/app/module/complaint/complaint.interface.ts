@@ -1,5 +1,5 @@
 import {
-	ComplaintPriority,
+	type ComplaintPriority,
 	ComplaintStatus,
 } from "../../../generated/prisma/enums";
 

@@ -26,21 +26,26 @@ const createComplaint = catchAsync(async (req: Request, res: Response) => {
 });
 
 const acknowledgeComplaint = catchAsync(async (req: Request, res: Response) => {
-  const userId = req.user?.userId;
-  const role = req.user?.role as Role;
-  const complaintId = req.params.id as string;
-  const note = req.body?.note;
+	const userId = req.user?.userId;
+	const role = req.user?.role as Role;
+	const complaintId = req.params.id as string;
+	const note = req.body?.note;
 
-  if (!userId) throw new AppError(httpStatus.UNAUTHORIZED, "Auth required");
+	if (!userId) throw new AppError(httpStatus.UNAUTHORIZED, "Auth required");
 
-  const result = await ComplaintServices.acknowledgeComplaint(complaintId, role, note, userId);
+	const result = await ComplaintServices.acknowledgeComplaint(
+		complaintId,
+		role,
+		note,
+		userId,
+	);
 
-  sendResponse(res, {
-    statusCode: httpStatus.OK,
-    success: true,
-    message: "Complaint acknowledged successfully",
-    data: result,
-  });
+	sendResponse(res, {
+		statusCode: httpStatus.OK,
+		success: true,
+		message: "Complaint acknowledged successfully",
+		data: result,
+	});
 });
 
 const getMyComplaints = catchAsync(async (req: Request, res: Response) => {
@@ -80,12 +85,13 @@ const getSingleComplaint = catchAsync(async (req: Request, res: Response) => {
 });
 
 const getAllComplaints = catchAsync(async (req: Request, res: Response) => {
-	
 	const filters = req.query;
 	const departmentId = req.params.departmentId as string;
 
-
-	const result = await ComplaintServices.getAllComplaints(filters, departmentId);
+	const result = await ComplaintServices.getAllComplaints(
+		filters,
+		departmentId,
+	);
 	sendResponse(res, {
 		statusCode: httpStatus.OK,
 		success: true,
@@ -96,30 +102,25 @@ const getAllComplaints = catchAsync(async (req: Request, res: Response) => {
 });
 
 const resolveComplaint = catchAsync(async (req: Request, res: Response) => {
-    const complaintId = req.params.id as string;
-    const user = req.user;
+	const complaintId = req.params.id as string;
+	const user = req.user;
 
-    if (!user) {
-        throw new AppError(
-            httpStatus.UNAUTHORIZED,
-            "Authentication required"
-        );
-    }
+	if (!user) {
+		throw new AppError(httpStatus.UNAUTHORIZED, "Authentication required");
+	}
 
-    const { resolutionProof } = req.body;
+	const { resolutionProof } = req.body;
 
-    const result = await ComplaintServices.resolveComplaint(
-        complaintId,
-        user,
-        { resolutionProof }
-    );
+	const result = await ComplaintServices.resolveComplaint(complaintId, user, {
+		resolutionProof,
+	});
 
-    sendResponse(res, {
-        statusCode: httpStatus.OK,
-        success: true,
-        message: "Complaint resolved successfully",
-        data: result,
-    });
+	sendResponse(res, {
+		statusCode: httpStatus.OK,
+		success: true,
+		message: "Complaint resolved successfully",
+		data: result,
+	});
 });
 
 const confirmComplaint = catchAsync(async (req: Request, res: Response) => {
@@ -140,15 +141,20 @@ const confirmComplaint = catchAsync(async (req: Request, res: Response) => {
 	});
 });
 
-const getAssignedComplaints = catchAsync( async (req: Request, res: Response) => {
-
+const getAssignedComplaints = catchAsync(
+	async (req: Request, res: Response) => {
 		const query = req.query;
 		const role = req.user?.role;
 		const userId = req.user?.userId as string;
 		const departmentId = req.params.departmentId as string;
 		if (!role) throw new AppError(httpStatus.UNAUTHORIZED, "Auth required");
 
-		const result = await ComplaintServices.getAssignedComplaints(role, query, userId, departmentId);
+		const result = await ComplaintServices.getAssignedComplaints(
+			role,
+			query,
+			userId,
+			departmentId,
+		);
 
 		sendResponse(res, {
 			statusCode: httpStatus.OK,
@@ -326,19 +332,23 @@ const assignComplaint = catchAsync(async (req: Request, res: Response) => {
 });
 
 const rejectComplaint = catchAsync(async (req: Request, res: Response) => {
-  if (!req.user) throw new AppError(httpStatus.UNAUTHORIZED, "Auth required");
-  
-  const rejectComplaintId = req.params.id as string;
-  const { reason } = req.body;
+	if (!req.user) throw new AppError(httpStatus.UNAUTHORIZED, "Auth required");
 
-  const result = await ComplaintServices.rejectComplaint(rejectComplaintId, req.user, reason);
+	const rejectComplaintId = req.params.id as string;
+	const { reason } = req.body;
 
-  sendResponse(res, {
-    statusCode: httpStatus.OK,
-    success: true,
-    message: "Complaint rejected successfully",
-    data: result,
-  });
+	const result = await ComplaintServices.rejectComplaint(
+		rejectComplaintId,
+		req.user,
+		reason,
+	);
+
+	sendResponse(res, {
+		statusCode: httpStatus.OK,
+		success: true,
+		message: "Complaint rejected successfully",
+		data: result,
+	});
 });
 export const ComplaintController = {
 	createComplaint,
@@ -356,5 +366,5 @@ export const ComplaintController = {
 	assignComplaint,
 	disputeComplaint,
 	reopenDisputedComplaint,
-  	rejectComplaint
+	rejectComplaint,
 };

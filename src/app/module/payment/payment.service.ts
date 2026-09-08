@@ -3,8 +3,11 @@ import { prisma } from "../../lib/prisma";
 import { AppError } from "../../utils/AppError";
 import { FineStatus, PaymentStatus } from "../../../generated/prisma/enums";
 import config from "../../config";
-import { createBkashPayment, executeBkashPayment, refundBkashPayment } from "../../services/bkash.service";
-
+import {
+	createBkashPayment,
+	executeBkashPayment,
+	refundBkashPayment,
+} from "../../services/bkash.service";
 
 // 1. Citizen initiates payment for a fine
 const initiatePayment = async (fineId: string, userId: string) => {
@@ -57,7 +60,8 @@ const handleBkashCallback = async (paymentID: string, status: string) => {
 		return prisma.payment.update({
 			where: { id: payment.id },
 			data: {
-				status: status === "cancel" ? PaymentStatus.CANCELLED : PaymentStatus.FAILED,
+				status:
+					status === "cancel" ? PaymentStatus.CANCELLED : PaymentStatus.FAILED,
 			},
 		});
 	}

@@ -1,10 +1,10 @@
 import {
-	ComplaintPriority,
+	type ComplaintPriority,
 	ComplaintStatus,
 	Role,
 } from "../../../generated/prisma/enums";
-import { ComplaintWhereInput } from "../../../generated/prisma/models";
-import { IQuery } from "../../interfaces";
+import type { ComplaintWhereInput } from "../../../generated/prisma/models";
+import type { IQuery } from "../../interfaces";
 import { prisma } from "../../lib/prisma";
 import { AppError } from "../../utils/AppError";
 import {
@@ -18,7 +18,8 @@ import type {
 import httpStatus from "http-status";
 
 const createComplaint = async (payload: ICreateComplaint, userId: string) => {
-	const { title, description, location, photos, categoryId, priority } = payload;
+	const { title, description, location, photos, categoryId, priority } =
+		payload;
 
 	const category = await prisma.category.findUnique({
 		where: { id: categoryId },
@@ -93,23 +94,30 @@ const createComplaint = async (payload: ICreateComplaint, userId: string) => {
 //   return updatedComplaint;
 // };
 
-const acknowledgeComplaint = async (complaintId: string, user: Role, note?: string, userId?: string) => {
-  // 1. Permission Check (§2.1 & §6 API Endpoints)
-  if (user !== Role.ADMIN && user !== Role.SUPER_ADMIN) {
-    throw new AppError(httpStatus.FORBIDDEN, "Only Admins can acknowledge complaints");
-  }
+const acknowledgeComplaint = async (
+	complaintId: string,
+	user: Role,
+	note?: string,
+	userId?: string,
+) => {
+	// 1. Permission Check (§2.1 & §6 API Endpoints)
+	if (user !== Role.ADMIN && user !== Role.SUPER_ADMIN) {
+		throw new AppError(
+			httpStatus.FORBIDDEN,
+			"Only Admins can acknowledge complaints",
+		);
+	}
 
-  // 2. Use the centralized transition handler
-  // This handles: Finding the complaint, checking allowed transitions, 
-  // updating timestamps, and creating the audit log.
-  return transitionStatus(
-    complaintId,
-    ComplaintStatus.ACKNOWLEDGED,
-    userId as string, // Pass the userId for the audit log
-    note || "Complaint acknowledged by Admin"
-  );
+	// 2. Use the centralized transition handler
+	// This handles: Finding the complaint, checking allowed transitions,
+	// updating timestamps, and creating the audit log.
+	return transitionStatus(
+		complaintId,
+		ComplaintStatus.ACKNOWLEDGED,
+		userId as string, // Pass the userId for the audit log
+		note || "Complaint acknowledged by Admin",
+	);
 };
-
 
 const getMyComplaints = async (userId: string) => {
 	const complaints = await prisma.complaint.findMany({
@@ -154,14 +162,14 @@ const getSingleComplaintById = async (complaintId: string, userId: string) => {
 };
 
 const getAllComplaints = async (query: IQuery, departmentId: string) => {
-	const { 
-		status, 
-		priority, 
-		searchTerm, 
-		page = 1, 
-		limit = 10, 
-		sortBy = "submittedAt", 
-		sortOrder = "desc" 
+	const {
+		status,
+		priority,
+		searchTerm,
+		page = 1,
+		limit = 10,
+		sortBy = "submittedAt",
+		sortOrder = "desc",
 	} = query;
 	const pageNum = Number(page);
 	const limitNum = Number(limit);
@@ -173,7 +181,7 @@ const getAllComplaints = async (query: IQuery, departmentId: string) => {
 
 	if (status) andConditions.push({ status });
 	if (priority) andConditions.push({ priority });
-	
+
 	if (query.departmentId) {
 		andConditions.push({ departmentId: query.departmentId });
 	}
@@ -192,7 +200,7 @@ const getAllComplaints = async (query: IQuery, departmentId: string) => {
 			where: whereCondition,
 			skip,
 			take: limitNum,
-			orderBy: { 
+			orderBy: {
 				[sortBy]: sortOrder,
 			},
 
@@ -213,23 +221,22 @@ const getAllComplaints = async (query: IQuery, departmentId: string) => {
 			page,
 			limit,
 			totalPages: Math.ceil(total / limitNum),
-			
 		},
 	};
 };
 
 const resolveComplaint = async (
 	complaintId: string,
-	user:any, // Pass the full user object from req.user
+	user: any, // Pass the full user object from req.user
 	payload: IResolveComplaint,
 ) => {
 	// 1. Permission Check (§7.2 & §6 API Endpoints)
 	if (user.role !== Role.STAFF) {
-        throw new AppError(
-            httpStatus.FORBIDDEN,
-            "Only Staff can resolve complaints"
-        );
-    }
+		throw new AppError(
+			httpStatus.FORBIDDEN,
+			"Only Staff can resolve complaints",
+		);
+	}
 
 	// if (complaint.assignedStaffId !== user.userId) {
 	// 	throw new AppError(httpStatus.FORBIDDEN, "Only Staff can resolve complaints");
@@ -247,19 +254,22 @@ const resolveComplaint = async (
 	}
 
 	if (complaint.assignedStaffId !== user.userId) {
-		throw new AppError(httpStatus.FORBIDDEN, "You are not assigned to this complaint");
+		throw new AppError(
+			httpStatus.FORBIDDEN,
+			"You are not assigned to this complaint",
+		);
 	}
 
 	if (complaint.status !== ComplaintStatus.IN_PROGRESS) {
-    throw new AppError(
-        httpStatus.BAD_REQUEST,
-        `Cannot resolve a complaint with status ${complaint.status}`
-    );
-}
+		throw new AppError(
+			httpStatus.BAD_REQUEST,
+			`Cannot resolve a complaint with status ${complaint.status}`,
+		);
+	}
 
 	// 3. Convert Object to String for Prisma (§11 Data Models: resolutionProof is String)
-	const resolutionProofString = payload.resolutionProof 
-		? JSON.stringify(payload.resolutionProof) 
+	const resolutionProofString = payload.resolutionProof
+		? JSON.stringify(payload.resolutionProof)
 		: null;
 
 	const note = payload.resolutionProof?.note || "Marked as resolved by Staff";
@@ -270,7 +280,7 @@ const resolveComplaint = async (
 		ComplaintStatus.RESOLVED,
 		user.userId, // Pass userId for the audit log
 		note,
-		{ resolutionProof: resolutionProofString } // Extra data to update in Prisma
+		{ resolutionProof: resolutionProofString }, // Extra data to update in Prisma
 	);
 };
 
@@ -300,15 +310,20 @@ const confirmComplaint = async (complaintId: string, userId: string) => {
 };
 
 // staff
-const getAssignedComplaints = async (user:Role, query: IQuery, userId: string, departmentId: string) => {
-	const { 
-		status, 
-		priority, 
-		searchTerm, 
-		page = 1, 
-		limit = 10, 
-		sortBy = "submittedAt", 
-		sortOrder = "desc" 
+const getAssignedComplaints = async (
+	user: Role,
+	query: IQuery,
+	userId: string,
+	departmentId: string,
+) => {
+	const {
+		status,
+		priority,
+		searchTerm,
+		page = 1,
+		limit = 10,
+		sortBy = "submittedAt",
+		sortOrder = "desc",
 	} = query;
 
 	const pageNum = Number(page);
@@ -325,13 +340,13 @@ const getAssignedComplaints = async (user:Role, query: IQuery, userId: string, d
 		andConditions.push({
 			OR: [
 				{ assignedStaffId: userId }, // Complaints assigned to this staff
-				{ 
+				{
 					AND: [
 						{ assignedStaffId: null },
-						{ departmentId:departmentId } // Assuming user object has staffProfile
-					]
-				}
-			]
+						{ departmentId: departmentId }, // Assuming user object has staffProfile
+					],
+				},
+			],
 		});
 	} else if (user === Role.CITIZEN) {
 		// Citizens only see their own complaints
@@ -377,19 +392,19 @@ const getAssignedComplaints = async (user:Role, query: IQuery, userId: string, d
 			include: {
 				category: { select: { name: true } },
 				department: { select: { name: true } },
-				assignedStaff: { 
-					select: { 
-						name: true, 
+				assignedStaff: {
+					select: {
+						name: true,
 						phone: true,
-						email: true
-					} 
+						email: true,
+					},
 				},
-				citizen: { 
-					select: { 
-						name: true, 
+				citizen: {
+					select: {
+						name: true,
 						phone: true,
-						email: true
-					} 
+						email: true,
+					},
 				},
 				// Include logs if needed for quick status check, otherwise keep it light
 			},
@@ -458,7 +473,10 @@ const startComplaint = async (complaintId: string, staffId: string) => {
 	}
 
 	// Logic: Can only start if it's currently ASSIGNED
-	if (complaint.status !== ComplaintStatus.ASSIGNED && complaint.status !== ComplaintStatus.DISPUTED) {
+	if (
+		complaint.status !== ComplaintStatus.ASSIGNED &&
+		complaint.status !== ComplaintStatus.DISPUTED
+	) {
 		throw new AppError(400, `Cannot start: Status is '${complaint.status}'`);
 	}
 
@@ -704,38 +722,45 @@ const disputeComplaint = async (
 	);
 };
 
-const rejectComplaint = async (complaintId: string, user: any, reason: string) => {
-  // 1. Permission Check (§2.1 & §6)
-  if (user.role !== "ADMIN" && user.role !== "SUPER_ADMIN") {
-    throw new AppError(httpStatus.FORBIDDEN, "Only Admins can reject complaints");
-  }
+const rejectComplaint = async (
+	complaintId: string,
+	user: any,
+	reason: string,
+) => {
+	// 1. Permission Check (§2.1 & §6)
+	if (user.role !== "ADMIN" && user.role !== "SUPER_ADMIN") {
+		throw new AppError(
+			httpStatus.FORBIDDEN,
+			"Only Admins can reject complaints",
+		);
+	}
 
-  // 2. Find Complaint to check current status
-  const complaint = await prisma.complaint.findUnique({
-    where: { id: complaintId },
-  });
+	// 2. Find Complaint to check current status
+	const complaint = await prisma.complaint.findUnique({
+		where: { id: complaintId },
+	});
 
-  if (!complaint) {
-    throw new AppError(httpStatus.NOT_FOUND, "Complaint not found");
-  }
+	if (!complaint) {
+		throw new AppError(httpStatus.NOT_FOUND, "Complaint not found");
+	}
 
-  // 3. State Transition Check (§8)
-  // Rejection is only allowed from SUBMITTED or ACKNOWLEDGED
-  if (complaint.status !== "SUBMITTED" && complaint.status !== "ACKNOWLEDGED") {
-    throw new AppError(
-      httpStatus.BAD_REQUEST, 
-      `Cannot reject: Complaint is currently '${complaint.status}'. Rejection is only allowed from SUBMITTED or ACKNOWLEDGED.`
-    );
-  }
+	// 3. State Transition Check (§8)
+	// Rejection is only allowed from SUBMITTED or ACKNOWLEDGED
+	if (complaint.status !== "SUBMITTED" && complaint.status !== "ACKNOWLEDGED") {
+		throw new AppError(
+			httpStatus.BAD_REQUEST,
+			`Cannot reject: Complaint is currently '${complaint.status}'. Rejection is only allowed from SUBMITTED or ACKNOWLEDGED.`,
+		);
+	}
 
-  // 4. Use Centralized Transition Helper
-  // This handles: updating status, setting rejectedAt, and creating the audit log
-  return transitionStatus(
-    complaintId,
-    ComplaintStatus.REJECTED,
-    user.userId,
-    `Rejected by Admin: ${reason}`
-  );
+	// 4. Use Centralized Transition Helper
+	// This handles: updating status, setting rejectedAt, and creating the audit log
+	return transitionStatus(
+		complaintId,
+		ComplaintStatus.REJECTED,
+		user.userId,
+		`Rejected by Admin: ${reason}`,
+	);
 };
 export const ComplaintServices = {
 	createComplaint,
@@ -754,5 +779,5 @@ export const ComplaintServices = {
 	disputeComplaint,
 	reopenDisputedComplaint,
 	transitionStatus,
-	rejectComplaint
+	rejectComplaint,
 };

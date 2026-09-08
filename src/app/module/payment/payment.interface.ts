@@ -1,4 +1,7 @@
-import type { PaymentGateway, PaymentStatus } from "../../../generated/prisma/enums";
+import type {
+	PaymentGateway,
+	PaymentStatus,
+} from "../../../generated/prisma/enums";
 
 export interface ICreatePayment {
 	fineId: string;

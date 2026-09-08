@@ -13,8 +13,8 @@ import {
 	updatePrioritySchema,
 	assignComplaintSchema,
 	disputeComplaintSchema,
-  startComplaintSchema,
-  rejectComplaintSchema,
+	startComplaintSchema,
+	rejectComplaintSchema,
 } from "./complaint.validation";
 
 const router = Router();
@@ -29,9 +29,9 @@ router.post(
 );
 
 router.patch(
-  "/:id/acknowledge",
-  auth(Role.STAFF, Role.ADMIN),
-  ComplaintController.acknowledgeComplaint,
+	"/:id/acknowledge",
+	auth(Role.STAFF, Role.ADMIN),
+	ComplaintController.acknowledgeComplaint,
 );
 
 router.get(
@@ -58,7 +58,7 @@ router.get(
 router.get(
 	"/",
 	auth(Role.STAFF, Role.ADMIN, Role.SUPER_ADMIN),
-	validateRequest(getMyComplaintsSchema), // ⚠️ confirm this shouldn't be a separate getAllComplaintsSchema
+	validateRequest(getMyComplaintsSchema), 
 	ComplaintController.getAllComplaints,
 );
 
@@ -121,10 +121,10 @@ router.patch(
 );
 
 router.patch(
-  "/:id/reject",
-  auth(Role.ADMIN, Role.SUPER_ADMIN),
-  validateRequest(rejectComplaintSchema),
-  ComplaintController.rejectComplaint,
+	"/:id/reject",
+	auth(Role.ADMIN, Role.SUPER_ADMIN),
+	validateRequest(rejectComplaintSchema),
+	ComplaintController.rejectComplaint,
 );
 
 export const ComplaintRoutes = router;
