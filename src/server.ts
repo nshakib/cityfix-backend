@@ -17,9 +17,9 @@ const main = async () => {
 		await transporter.verify();
 		console.log("Nodemailer Connected Successfully.");
 
-		app.listen(PORT, () => {
-			console.log(`Server is running on port ${PORT}`);
-		});
+		if (!process.env.VERCEL) {
+  			app.listen(PORT, () => console.log(`Server running on ${PORT}`));
+		}
 	} catch (error) {
 		console.error("Error starting the server:", error);
 		await prisma.$disconnect();
