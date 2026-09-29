@@ -17,6 +17,8 @@ import { ComplaintRoutes } from "./app/module/complaint/complaint.route";
 import { FineRoutes } from "./app/module/fine/fine.route";
 import { PaymentRoutes } from "./app/module/payment/payment.route";
 import helmet from "helmet";
+import { apiLimiter, authLimiter } from "./app/middleware/rateLimiter";
+import { NotificationRoutes } from "./app/module/notification/notification.route";
 
 const app: Application = express();
 
@@ -36,12 +38,23 @@ app.use(express.json());
 app.use(cookieParser());
 
 app.use("/api/v1/auth", AuthRoutes);
-app.use("/api/v1/user", UserRoutes);
-app.use("/api/v1/categories", CategoryRoutes);
-app.use("/api/v1/departments", DepartmentRoutes);
-app.use("/api/v1/complaints", ComplaintRoutes);
-app.use("/api/v1/fines", FineRoutes);
-app.use("/api/v1/payments", PaymentRoutes);
+
+
+
+
+// ...existing middleware...
+app.use(cookieParser());
+
+// apply the stricter limiter to auth first...
+app.use("/api/v1/auth", authLimiter, AuthRoutes);
+
+app.use("/api/v1/user", apiLimiter, UserRoutes);
+app.use("/api/v1/categories", apiLimiter, CategoryRoutes);
+app.use("/api/v1/departments", apiLimiter, DepartmentRoutes);
+app.use("/api/v1/complaints", apiLimiter, ComplaintRoutes);
+app.use("/api/v1/fines", apiLimiter, FineRoutes);
+app.use("/api/v1/payments", apiLimiter, PaymentRoutes);
+app.use("/api/v1/notifications", apiLimiter, NotificationRoutes);
 
 // Basic route
 app.get("/", async (req: Request, res: Response) => {

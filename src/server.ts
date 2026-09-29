@@ -17,8 +17,10 @@ const main = async () => {
 		await transporter.verify();
 		console.log("Nodemailer Connected Successfully.");
 
-		if (!process.env.VERCEL) {
-  			app.listen(PORT, () => console.log(`Server running on ${PORT}`));
+		if (process.env.NODE_ENV !== 'production') {
+			app.listen(PORT, () => {
+				console.log(`Server running on port ${PORT}`);
+			});
 		}
 	} catch (error) {
 		console.error("Error starting the server:", error);
