@@ -17,16 +17,33 @@ const main = async () => {
 		await transporter.verify();
 		console.log("Nodemailer Connected Successfully.");
 
-		if (process.env.NODE_ENV !== 'production') {
-			app.listen(PORT, () => {
-				console.log(`Server running on port ${PORT}`);
-			});
-		}
+		app.listen(PORT, () => {
+			console.log(`🚀 Server running on port ${PORT}`);
+		});
 	} catch (error) {
 		console.error("Error starting the server:", error);
-		await prisma.$disconnect();
+
+		// Safely clean up connections if startup fails
+		try { await prisma.$disconnect(); } catch (e) { /* ignore */ }
+		try { await redisClient.disconnect(); } catch (e) { /* ignore */ }
+		
 		process.exit(1);
 	}
 };
+
+// 🛡️ Graceful Shutdown Handling
+const gracefulShutdown = async (signal: string) => {
+	console.log(`\n🛑 ${signal} received. Shutting down gracefully...`);
+	
+	try { await prisma.$disconnect(); } catch (e) { /* ignore */ }
+	try { await redisClient.disconnect(); } catch (e) { /* ignore */ }
+	
+	console.log("✅ Connections closed. Exiting.");
+	process.exit(0);
+};
+
+// Listen for termination signals
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
 main();
