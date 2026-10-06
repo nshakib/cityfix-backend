@@ -22,9 +22,17 @@ import { NotificationRoutes } from "./app/module/notification/notification.route
 
 const app: Application = express();
 
+const allowedOrigins = [config.frontend_url, "http://localhost:3000"].filter(Boolean);
+
 app.use(
 	cors({
-		origin: config.frontend_url,
+		origin: (origin, callback) => {
+			if (!origin || allowedOrigins.includes(origin)) {
+				callback(null, true);
+			} else {
+				callback(new Error("Not allowed by CORS"));
+			}
+		},
 		credentials: true,
 	}),
 );
