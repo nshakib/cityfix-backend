@@ -31,7 +31,7 @@ const createDepartment = async (payload: ICreateDepartment) => {
 const getSingleDepartment = async (userId: string) => {
 	const department = await prisma.department.findUnique({
 		where: {
-			id: userId,
+			id,
 		},
 		include: { categories: true },
 	});

@@ -14,9 +14,17 @@ router.post(
 	departmentController.createDepartment,
 );
 
-router.get("/", departmentController.getAllDepartments);
+router.get(
+	"/",
+	auth(Role.SUPER_ADMIN, Role.ADMIN, Role.STAFF, Role.CITIZEN),
+	departmentController.getAllDepartments,
+);
 
-router.get("/:id", departmentController.getSingleDepartment);
+router.get(
+	"/:id",
+	auth(Role.SUPER_ADMIN, Role.ADMIN, Role.STAFF, Role.CITIZEN),
+	departmentController.getSingleDepartment,
+);
 
 router.patch(
 	"/:id",

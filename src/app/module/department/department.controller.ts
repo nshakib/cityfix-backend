@@ -27,12 +27,9 @@ const createDepartment = catchAsync(async (req: Request, res: Response) => {
 });
 
 const getSingleDepartment = catchAsync(async (req: Request, res: Response) => {
-	const userId = req.user?.userId;
-	if (!userId) {
-		throw new AppError(httpStatus.UNAUTHORIZED, "Authentication required");
-	}
-
-	const result = await DepartmentServices.getSingleDepartment(userId);
+	const result = await DepartmentServices.getSingleDepartment(
+		req.params.id as string,
+	);
 
 	sendResponse(res, {
 		statusCode: httpStatus.OK,
@@ -41,13 +38,8 @@ const getSingleDepartment = catchAsync(async (req: Request, res: Response) => {
 		data: result,
 	});
 });
-const getAllDepartments = catchAsync(async (req: Request, res: Response) => {
-	const userId = req.user?.userId;
 
-	if (!userId) {
-		throw new AppError(httpStatus.UNAUTHORIZED, "Authentication required");
-	}
-
+const getAllDepartments = catchAsync(async (_req: Request, res: Response) => {
 	const result = await DepartmentServices.getAllDepartments();
 
 	sendResponse(res, {
@@ -57,13 +49,12 @@ const getAllDepartments = catchAsync(async (req: Request, res: Response) => {
 		data: result,
 	});
 });
-const updateDepartment = catchAsync(async (req: Request, res: Response) => {
-	const userId = req.user?.userId;
-	if (!userId) {
-		throw new AppError(httpStatus.UNAUTHORIZED, "Authentication required");
-	}
 
-	const result = await DepartmentServices.updateDepartment(userId, req.body);
+const updateDepartment = catchAsync(async (req: Request, res: Response) => {
+	const result = await DepartmentServices.updateDepartment(
+		req.params.id as string,
+		req.body,
+	);
 
 	sendResponse(res, {
 		statusCode: httpStatus.OK,
@@ -72,15 +63,11 @@ const updateDepartment = catchAsync(async (req: Request, res: Response) => {
 		data: result,
 	});
 });
+
 const updateDepartmentStatus = catchAsync(
 	async (req: Request, res: Response) => {
-		const userId = req.user?.userId;
-		if (!userId) {
-			throw new AppError(httpStatus.UNAUTHORIZED, "Authentication required");
-		}
-
 		const result = await DepartmentServices.updateDepartmentStatus(
-			userId,
+			req.params.id as string,
 			req.body,
 		);
 
