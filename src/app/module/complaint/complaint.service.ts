@@ -143,7 +143,7 @@ const getSingleComplaintById = async (complaintId: string, userId: string) => {
 		include: {
 			category: true,
 			department: true,
-			assignedStaff: { select: { name: true, phone: true } },
+			assignedStaff: { select: { name: true, email: true } },
 		},
 	});
 
@@ -177,8 +177,6 @@ const getAllComplaints = async (query: IQuery, departmentId: string) => {
 
 	const andConditions: ComplaintWhereInput[] = [];
 
-	//const whereCondition = andConditions.length > 0 ? { AND: andConditions } : {};
-
 	if (status) andConditions.push({ status });
 	if (priority) andConditions.push({ priority });
 
@@ -189,27 +187,31 @@ const getAllComplaints = async (query: IQuery, departmentId: string) => {
 		andConditions.push({
 			OR: [
 				{ description: { contains: searchTerm, mode: "insensitive" } },
-				{ location: { contains: searchTerm, mode: "insensitive" } }, // If location is stored as text
+				{ location: { contains: searchTerm, mode: "insensitive" } },
 				{ category: { name: { contains: searchTerm, mode: "insensitive" } } },
 			],
 		});
 	}
+
+	// must come AFTER the pushes above
+	const whereCondition = andConditions.length > 0 ? { AND: andConditions } : {};
 
 	const [complaints, total] = await prisma.$transaction([
 		prisma.complaint.findMany({
 			where: whereCondition,
 			skip,
 			take: limitNum,
-			orderBy: {
-				[sortBy]: sortOrder,
-			},
-
+			orderBy: { [sortBy]: sortOrder },
 			include: {
 				category: { select: { name: true } },
 				department: { select: { name: true } },
-				assignedStaff: { select: { name: true, phone: true } },
+				assignedStaff: { select: { name: true, email: true } },
 				citizen: {
-					select: { name: true, email: true, citizen: { select: { contactNumber: true } } },
+					select: {
+						name: true,
+						email: true,
+						citizen: { select: { contactNumber: true } },
+					},
 				},
 			},
 		}),
@@ -220,8 +222,8 @@ const getAllComplaints = async (query: IQuery, departmentId: string) => {
 		data: complaints,
 		meta: {
 			total,
-			page,
-			limit,
+			page: pageNum,
+			limit: limitNum,
 			totalPages: Math.ceil(total / limitNum),
 		},
 	};
@@ -394,19 +396,9 @@ const getAssignedComplaints = async (
 			include: {
 				category: { select: { name: true } },
 				department: { select: { name: true } },
-				assignedStaff: {
-					select: {
-						name: true,
-						phone: true,
-						email: true,
-					},
-				},
+				assignedStaff: { select: { name: true, email: true } },
 				citizen: {
-					select: {
-						name: true,
-						phone: true,
-						email: true,
-					},
+					select: { name: true, email: true, citizen: { select: { contactNumber: true } } },
 				},
 				// Include logs if needed for quick status check, otherwise keep it light
 			},
