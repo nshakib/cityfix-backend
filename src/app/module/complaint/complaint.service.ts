@@ -127,7 +127,7 @@ const getMyComplaints = async (userId: string) => {
 		include: {
 			category: { select: { name: true } },
 			department: { select: { name: true } },
-			assignedStaff: { select: { name: true, phone: true } },
+			assignedStaff: { select: { name: true, email: true } },
 		},
 		orderBy: {
 			submittedAt: "desc",
@@ -177,7 +177,7 @@ const getAllComplaints = async (query: IQuery, departmentId: string) => {
 
 	const andConditions: ComplaintWhereInput[] = [];
 
-	const whereCondition = andConditions.length > 0 ? { AND: andConditions } : {};
+	//const whereCondition = andConditions.length > 0 ? { AND: andConditions } : {};
 
 	if (status) andConditions.push({ status });
 	if (priority) andConditions.push({ priority });
@@ -208,7 +208,9 @@ const getAllComplaints = async (query: IQuery, departmentId: string) => {
 				category: { select: { name: true } },
 				department: { select: { name: true } },
 				assignedStaff: { select: { name: true, phone: true } },
-				citizen: { select: { name: true, phone: true } }, // Admins need to contact citizens
+				citizen: {
+					select: { name: true, email: true, citizen: { select: { contactNumber: true } } },
+				},
 			},
 		}),
 		prisma.complaint.count({ where: whereCondition }),
