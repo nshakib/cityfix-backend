@@ -23,6 +23,7 @@ import { NotificationRoutes } from "./app/module/notification/notification.route
 const app: Application = express();
 
 const allowedOrigins = [config.frontend_url, "http://localhost:3000"].filter(Boolean);
+app.set("trust proxy", 1); // set trust proxy so rate limiter reads real client IP on Vercel
 
 app.use(
 	cors({
