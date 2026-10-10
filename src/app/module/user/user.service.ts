@@ -6,7 +6,7 @@ import { AppError } from "../../utils/AppError";
 import httpStatus from "http-status";
 import bcrypt from "bcryptjs";
 import config from "../../config";
-
+import { Role } from "../../../generated/prisma/enums";
 const uploadProfileImage = async (buffer: Buffer, userId: string) => {
 	// const cloudinaryResult = cloudinary.uploader.upload_stream(
 	//     {
