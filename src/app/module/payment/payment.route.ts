@@ -4,7 +4,7 @@ import { auth } from "../../middleware/checkAuth";
 import { Role } from "../../../generated/prisma/enums";
 import { PaymentController } from "./payment.controller";
 import { validateRequest } from "../../middleware/validateRequest";
-import { createPaymentSchema } from "./payment.validation";
+import { createPaymentSchema, createStripeCheckoutSchema } from "./payment.validation";
 
 const router = express.Router();
 
