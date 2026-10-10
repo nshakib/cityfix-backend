@@ -155,8 +155,21 @@ const changePassword = async (userId: string, payload: IChangePassword) => {
 	return updatedUser;
 };
 
+const getStaffList = async (departmentId?: string) => {
+	return prisma.user.findMany({
+		where: {
+			role: Role.STAFF,
+			status: "ACTIVE",
+			...(departmentId ? { departmentId } : {}),
+		},
+		select: { id: true, name: true, email: true, imageUrl: true, departmentId: true },
+		orderBy: { name: "asc" },
+	});
+};
+
 export const UserServices = {
 	uploadProfileImage,
 	updateUserProfile,
 	changePassword,
+	getStaffList,
 };

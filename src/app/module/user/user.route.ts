@@ -25,4 +25,11 @@ router.patch(
 	UserController.changePassword,
 );
 
+// user.route.ts
+router.get(
+	"/staff",
+	auth(Role.SUPER_ADMIN, Role.ADMIN),
+	UserController.getStaffList,
+);
+
 export const UserRoutes = router;

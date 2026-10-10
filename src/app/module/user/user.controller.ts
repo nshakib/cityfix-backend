@@ -50,8 +50,20 @@ const changePassword = catchAsync(async (req: Request, res: Response) => {
 	});
 });
 
+const getStaffList = catchAsync(async (req: Request, res: Response) => {
+	const departmentId = req.query.departmentId as string | undefined;
+	const result = await UserServices.getStaffList(departmentId);
+	sendResponse(res, {
+		statusCode: httpStatus.OK,
+		success: true,
+		message: "Staff retrieved successfully",
+		data: result,
+	});
+});
+
 export const UserController = {
 	uploadProfileImage,
 	updateUserProfile,
 	changePassword,
+	getStaffList
 };
