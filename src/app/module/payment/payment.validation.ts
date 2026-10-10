@@ -22,3 +22,9 @@ export const bkashCallbackSchema = z.object({
 		status: z.string(),
 	}),
 });
+
+export const createStripeCheckoutSchema = z.object({
+  body: z.object({
+    fineId: z.string().uuid("Invalid fine id"),
+  }),
+});

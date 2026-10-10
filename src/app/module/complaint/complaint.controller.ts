@@ -183,7 +183,8 @@ const startComplaint = catchAsync(async (req: Request, res: Response) => {
 const getDepartmentComplaints = catchAsync(
 	async (req: Request, res: Response) => {
 		const filters = req.query;
-		const departmentId = req.params.id as string;
+		// const departmentId = req.params.id as string;
+		const departmentId = req.user?.departmentId;
 		if (!departmentId)
 			throw new AppError(
 				httpStatus.FORBIDDEN,

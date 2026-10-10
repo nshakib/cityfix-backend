@@ -8,6 +8,7 @@ import {
 	executeBkashPayment,
 	refundBkashPayment,
 } from "../../services/bkash.service";
+import Stripe from "stripe";
 
 // 1. Citizen initiates payment for a fine
 const initiatePayment = async (fineId: string, userId: string) => {
@@ -149,8 +150,97 @@ const refundFinePayment = async (
 	});
 };
 
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+
+const createStripeCheckout = async (fineId: string, userId?: string) => {
+  const fine = await prisma.fine.findUnique({ where: { id: fineId } });
+  if (!fine) throw new AppError(404, "Fine not found");
+  if (fine.status === "PAID") throw new AppError(400, "Fine already paid");
+
+  // Only the recipient can pay (registered users). Guests use the secure link flow.
+  if (userId && fine.recipientUserId && fine.recipientUserId !== userId) {
+    throw new AppError(403, "This fine is not yours");
+  }
+
+  const session = await stripe.checkout.sessions.create({
+    mode: "payment",
+    line_items: [
+      {
+        quantity: 1,
+        price_data: {
+          currency: "usd",
+          unit_amount: Math.round(Number(fine.amount) * 100),
+          product_data: { name: `CityFix fine #${fine.id.slice(0, 8)}` },
+        },
+      },
+    ],
+    metadata: { fineId: fine.id },
+    success_url: `${process.env.CLIENT_URL}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${process.env.CLIENT_URL}/payment/cancel`,
+  });
+
+  await prisma.payment.create({
+    data: {
+      fineId: fine.id,
+      amount: fine.amount,
+      gateway: "STRIPE",
+      paymentId: session.id,
+      status: "PENDING",
+    },
+  });
+
+  return { checkoutUrl: session.url };
+};
+
+const handleStripeWebhook = async (rawBody: Buffer, signature: string) => {
+  const event = stripe.webhooks.constructEvent(
+    rawBody,
+    signature,
+    process.env.STRIPE_WEBHOOK_SECRET!
+  );
+
+  if (event.type === "checkout.session.completed") {
+    const session = event.data.object as Stripe.Checkout.Session;
+    const fineId = session.metadata?.fineId;
+    if (!fineId) return;
+
+    await prisma.$transaction([
+      prisma.payment.update({
+        where: { paymentId: session.id },
+        data: {
+          status: "PAID", // use your actual PaymentStatus value
+          transactionRef: session.payment_intent as string,
+        },
+      }),
+      prisma.fine.update({
+        where: { id: fineId },
+        data: { status: "PAID" },
+      }),
+    ]);
+  }
+
+  if (event.type === "checkout.session.expired") {
+    const session = event.data.object as Stripe.Checkout.Session;
+    await prisma.payment.update({
+      where: { paymentId: session.id },
+      data: { status: "FAILED" },
+    });
+  }
+};
+
+const getPaymentBySession = async (sessionId: string) => {
+  return prisma.payment.findUnique({
+    where: { paymentId: sessionId },
+    include: { fine: true },
+  });
+};
+
+
 export const PaymentServices = {
 	initiatePayment,
 	handleBkashCallback,
 	refundFinePayment,
+	createStripeCheckout,
+  	handleStripeWebhook,
+  	getPaymentBySession,
 };

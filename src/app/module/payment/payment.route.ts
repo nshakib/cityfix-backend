@@ -24,4 +24,17 @@ router.post(
 	PaymentController.refundFine,
 );
 
+router.post(
+  "/stripe/checkout",
+  auth("CITIZEN"),
+  validateRequest(createStripeCheckoutSchema),
+  PaymentController.createStripeCheckout
+);
+
+router.get(
+  "/stripe/status/:sessionId",
+  auth("CITIZEN", "STAFF", "ADMIN", "SUPER_ADMIN"),
+  PaymentController.getPaymentStatus
+);
+
 export const PaymentRoutes = router;

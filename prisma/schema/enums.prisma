@@ -71,6 +71,8 @@ enum PaymentStatus {
 
 enum PaymentGateway {
   BKASH
+  STRIPE
+  // SSLCOMMERZ
 }
 
 enum NotificationType {

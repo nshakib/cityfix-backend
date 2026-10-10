@@ -49,4 +49,48 @@ const refundFine = catchAsync(async (req: Request, res: Response) => {
 	});
 });
 
-export const PaymentController = { initiatePayment, bkashCallback, refundFine };
+const createStripeCheckout = catchAsync(async (req, res) => {
+  const result = await PaymentService.createStripeCheckout(
+    req.body.fineId,
+    req.user?.id
+  );
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "Stripe checkout session created",
+    data: result,
+  });
+});
+
+const stripeWebhook = async (req: Request, res: Response) => {
+  try {
+    await PaymentService.handleStripeWebhook(
+      req.body, // raw Buffer
+      req.headers["stripe-signature"] as string
+    );
+    res.json({ received: true });
+  } catch (err: any) {
+    res.status(400).json({ success: false, message: err.message });
+  }
+};
+
+const getPaymentStatus = catchAsync(async (req, res) => {
+  const result = await PaymentService.getPaymentBySession(
+    req.params.sessionId
+  );
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: "Payment status fetched",
+    data: result,
+  });
+});
+
+export const PaymentController = { 
+	initiatePayment, 
+	bkashCallback, 
+	refundFine,
+	createStripeCheckout,
+  	stripeWebhook,
+  	getPaymentStatus,
+};

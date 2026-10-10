@@ -4,8 +4,8 @@ model Payment {
   fineId String
   amount Decimal
 
-  gateway        PaymentGateway @default(BKASH)
-  paymentId      String?
+  gateway        PaymentGateway
+  paymentId      String? @unique
   transactionRef String?
   status         PaymentStatus  @default(PENDING)
 
