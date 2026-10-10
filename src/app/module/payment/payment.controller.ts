@@ -50,7 +50,7 @@ const refundFine = catchAsync(async (req: Request, res: Response) => {
 });
 
 const createStripeCheckout = catchAsync(async (req, res) => {
-  const result = await PaymentService.createStripeCheckout(
+  const result = await PaymentServices.createStripeCheckout(
     req.body.fineId,
     req.user?.id
   );
@@ -64,7 +64,7 @@ const createStripeCheckout = catchAsync(async (req, res) => {
 
 const stripeWebhook = async (req: Request, res: Response) => {
   try {
-    await PaymentService.handleStripeWebhook(
+    await PaymentServices.handleStripeWebhook(
       req.body, // raw Buffer
       req.headers["stripe-signature"] as string
     );
@@ -75,7 +75,7 @@ const stripeWebhook = async (req: Request, res: Response) => {
 };
 
 const getPaymentStatus = catchAsync(async (req, res) => {
-  const result = await PaymentService.getPaymentBySession(
+  const result = await PaymentServices.getPaymentBySession(
     req.params.sessionId
   );
   sendResponse(res, {

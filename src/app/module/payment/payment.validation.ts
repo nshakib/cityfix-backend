@@ -1,7 +1,6 @@
 import { z } from "zod";
 import { PaymentGateway } from "../../../generated/prisma/enums";
 
-// Route: POST /payments/fines/:fineId/pay — fineId comes from params, not body
 export const createPaymentSchema = z.object({
 	params: z.object({
 		fineId: z.string().uuid({ message: "Invalid fine ID" }),
