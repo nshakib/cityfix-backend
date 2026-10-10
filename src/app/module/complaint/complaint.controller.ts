@@ -85,20 +85,19 @@ const getSingleComplaint = catchAsync(async (req: Request, res: Response) => {
 });
 
 const getAllComplaints = catchAsync(async (req: Request, res: Response) => {
-	const filters = req.query;
-	const departmentId = req.params.departmentId as string;
-
-	const result = await ComplaintServices.getAllComplaints(
-		filters,
-		departmentId,
-	);
-	sendResponse(res, {
-		statusCode: httpStatus.OK,
-		success: true,
-		message: "Complaints retrieved successfully",
-		data: result.data,
-		meta: result.meta,
-	});
+	try {
+		const result = await ComplaintServices.getAllComplaints(req.query);
+		sendResponse(res, {
+			statusCode: httpStatus.OK,
+			success: true,
+			message: "Complaints retrieved successfully",
+			data: result.data,
+			meta: result.meta,
+		});
+	} catch (err) {
+		console.error("GET /complaints failed:", err);
+		throw err;
+	}
 });
 
 const resolveComplaint = catchAsync(async (req: Request, res: Response) => {

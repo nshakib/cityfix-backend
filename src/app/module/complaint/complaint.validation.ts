@@ -192,3 +192,16 @@ export const rejectComplaintSchema = z.object({
 		reason: z.string().min(5, "Reason for rejection is required"),
 	}),
 });
+
+   export const getAllComplaintsSchema = z.object({
+     query: z.object({
+       status: z.enum(Object.values(ComplaintStatus) as [string, ...string[]]).optional(),
+       priority: z.enum(Object.values(ComplaintPriority) as [string, ...string[]]).optional(),
+       departmentId: z.string().uuid().optional(),
+       searchTerm: z.string().trim().max(100).optional(),
+       sortBy: z.enum(["submittedAt", "priority", "status"]).optional(),
+       sortOrder: z.enum(["asc", "desc"]).optional(),
+       page: z.string().regex(/^\d+$/).optional(),
+       limit: z.string().regex(/^\d+$/).optional(),
+     }),
+   });

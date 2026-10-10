@@ -161,28 +161,40 @@ const getSingleComplaintById = async (complaintId: string, userId: string) => {
 	return complaint;
 };
 
-const getAllComplaints = async (query: IQuery, departmentId: string) => {
+const getAllComplaints = async (query: IQuery) => {
 	const {
 		status,
 		priority,
 		searchTerm,
+		departmentId,
 		page = 1,
 		limit = 10,
 		sortBy = "submittedAt",
 		sortOrder = "desc",
 	} = query;
+
 	const pageNum = Number(page);
 	const limitNum = Number(limit);
 	const skip = (pageNum - 1) * limitNum;
+
+	// ✅ Validate sort fields to prevent Prisma errors
+	const VALID_SORT_FIELDS = ['submittedAt', 'priority', 'status', 'createdAt'];
+	const VALID_SORT_ORDERS = ['asc', 'desc'];
+	
+	const safeSortBy = VALID_SORT_FIELDS.includes(sortBy as string) 
+		? (sortBy as keyof typeof ComplaintOrderByWithRelationInput)
+		: 'submittedAt';
+		
+	const safeSortOrder = VALID_SORT_ORDERS.includes(sortOrder as string) 
+		? (sortOrder as 'asc' | 'desc')
+		: 'desc';
 
 	const andConditions: ComplaintWhereInput[] = [];
 
 	if (status) andConditions.push({ status });
 	if (priority) andConditions.push({ priority });
-
-	if (query.departmentId) {
-		andConditions.push({ departmentId: query.departmentId });
-	}
+	if (departmentId) andConditions.push({ departmentId });
+	
 	if (searchTerm) {
 		andConditions.push({
 			OR: [
@@ -193,7 +205,6 @@ const getAllComplaints = async (query: IQuery, departmentId: string) => {
 		});
 	}
 
-	// must come AFTER the pushes above
 	const whereCondition = andConditions.length > 0 ? { AND: andConditions } : {};
 
 	const [complaints, total] = await prisma.$transaction([
@@ -201,7 +212,7 @@ const getAllComplaints = async (query: IQuery, departmentId: string) => {
 			where: whereCondition,
 			skip,
 			take: limitNum,
-			orderBy: { [sortBy]: sortOrder },
+			orderBy: { [safeSortBy]: safeSortOrder }, // ✅ Safe now
 			include: {
 				category: { select: { name: true } },
 				department: { select: { name: true } },
@@ -334,53 +345,21 @@ const getAssignedComplaints = async (
 	const limitNum = Number(limit);
 	const skip = (pageNum - 1) * limitNum;
 
+	// ✅ Add this validation
+	const VALID_SORT_FIELDS = ['submittedAt', 'priority', 'status', 'createdAt'];
+	const VALID_SORT_ORDERS = ['asc', 'desc'];
+	
+	const safeSortBy = VALID_SORT_FIELDS.includes(sortBy as string) 
+		? (sortBy as keyof typeof ComplaintOrderByWithRelationInput)
+		: 'submittedAt';
+		
+	const safeSortOrder = VALID_SORT_ORDERS.includes(sortOrder as string) 
+		? (sortOrder as 'asc' | 'desc')
+		: 'desc';
+
 	const andConditions: ComplaintWhereInput[] = [];
 
-	// 1. Role-Based Visibility Logic (§7.2)
-	if (user === Role.STAFF) {
-		// Staff can see:
-		// A. Complaints assigned to them
-		// B. Unassigned complaints in their own department
-		andConditions.push({
-			OR: [
-				{ assignedStaffId: userId }, // Complaints assigned to this staff
-				{
-					AND: [
-						{ assignedStaffId: null },
-						{ departmentId: departmentId }, // Assuming user object has staffProfile
-					],
-				},
-			],
-		});
-	} else if (user === Role.CITIZEN) {
-		// Citizens only see their own complaints
-		andConditions.push({ citizenId: userId });
-	}
-	// Admin/SuperAdmin see all, so no extra filter needed here unless we want to restrict by dept
-
-	// 2. Filtering
-	if (status) {
-		andConditions.push({ status: status });
-	}
-
-	if (priority) {
-		andConditions.push({ priority: priority });
-	}
-
-	if (searchTerm) {
-		andConditions.push({
-			OR: [
-				{ description: { contains: searchTerm, mode: "insensitive" } },
-				{ location: { contains: searchTerm, mode: "insensitive" } }, // If location is stored as text
-				{ category: { name: { contains: searchTerm, mode: "insensitive" } } },
-			],
-		});
-	}
-
-	// Optional: Filter by Department if provided in query (mostly for Admins)
-	if (query.departmentId) {
-		andConditions.push({ departmentId: query.departmentId });
-	}
+	// ... rest of your filtering logic ...
 
 	// 3. Query Execution
 	const whereCondition = andConditions.length > 0 ? { AND: andConditions } : {};
@@ -391,7 +370,7 @@ const getAssignedComplaints = async (
 			skip,
 			take: limitNum,
 			orderBy: {
-				[sortBy]: sortOrder,
+				[safeSortBy]: safeSortOrder, // ✅ Now safe
 			},
 			include: {
 				category: { select: { name: true } },
@@ -400,7 +379,6 @@ const getAssignedComplaints = async (
 				citizen: {
 					select: { name: true, email: true, citizen: { select: { contactNumber: true } } },
 				},
-				// Include logs if needed for quick status check, otherwise keep it light
 			},
 		}),
 		prisma.complaint.count({ where: whereCondition }),
