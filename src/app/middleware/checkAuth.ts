@@ -14,6 +14,7 @@ declare global {
 				name: string;
 				userId: string;
 				role: Role;
+				departmentId: string | null;
 			};
 		}
 	}
@@ -71,6 +72,7 @@ export const auth = (...requiredRoles: Role[]) => {
 			name,
 			userId,
 			role,
+			departmentId: user.departmentId,
 		};
 
 		next();
