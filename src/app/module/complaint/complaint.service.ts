@@ -398,13 +398,15 @@ const getAssignedComplaints = async (
 const getDepartmentComplaints = async (
 	departmentId: string,
 	filters: {
-		const { status, priority } = filters;
-		const page = Number(filters.page) || 1;
-		const limit = Number(filters.limit) || 10;
-		const skip = (page - 1) * limit;
-			},
+		page?: number;
+		limit?: number;
+		status?: string;
+		priority?: string;
+	},
 ) => {
-	const { page = 1, limit = 10, status, priority } = filters;
+	const { status, priority } = filters;
+	const page = Number(filters.page) || 1;
+	const limit = Number(filters.limit) || 10;
 	const skip = (page - 1) * limit;
 
 	const where: any = { departmentId };
