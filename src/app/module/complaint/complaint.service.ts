@@ -422,6 +422,8 @@ const getDepartmentComplaints = async (
 			include: {
 				assignedStaff: { select: { name: true } },
 				category: { select: { name: true } },
+				department: { select: { name: true } },
+				citizen: { select: { name: true, email: true } },
 			},
 		}),
 		prisma.complaint.count({ where }),
