@@ -162,17 +162,21 @@ const createStripeCheckout = async (fineId: string, userId?: string) => {
     throw new AppError(403, "This fine is not yours");
   }
 
+  const BDT_PER_USD = 120;
   const session = await stripe.checkout.sessions.create({
+	
     mode: "payment",
     line_items: [
-      {
-        quantity: 1,
-        price_data: {
-          currency: "usd",
-          unit_amount: Math.round(Number(fine.amount) * 100),
-          product_data: { name: `CityFix fine #${fine.id.slice(0, 8)}` },
-        },
-      },
+		{
+			quantity: 1,
+			price_data: {
+				currency: "usd",
+				unit_amount: Math.round((Number(fine.amount) / BDT_PER_USD) * 100),
+				product_data: {
+					name: `CityFix fine #${fine.id.slice(0, 8)} (৳${Number(fine.amount)})`,
+				},
+			},
+		 },
     ],
     metadata: { fineId: fine.id },
     success_url: `${process.env.CLIENT_URL}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
