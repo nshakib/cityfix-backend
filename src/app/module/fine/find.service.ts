@@ -83,10 +83,11 @@ const getAllFines = async (filters: IGetFinesFilters) => {
 			take: Number(limit),
 			orderBy: { createdAt: "desc" },
 			include: {
-				recipient: { select: { name: true, phone: true } },
-				issuedByStaff: { select: { name: true } },
-			},
-		}),
+				recipient: { select: { name: true, email: true } },
+				issuer: { select: { name: true } },
+				category: { select: { name: true } },
+},
+			}),
 		prisma.fine.count({ where }),
 	]);
 
